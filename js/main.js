@@ -1370,49 +1370,37 @@ window.isAdminDevice = false;
 function checkDashboardAccess(){
 
   const mode = localStorage.getItem("networkMode") || "local";
-  const isAdmin = sessionStorage.getItem("adminVerified") === "true";
 
-  const ACCESS_KEY = btoa("Rushii");
-
-  function verifyAccess(input){
-    return btoa(input) === ACCESS_KEY;
-  }
-
-  // ================= ADMIN MODE =================
+  // ===== ADMIN MODE =====
   if(mode === "local"){
-  return true;   // 🔥 NO PASSWORD for admin mode
-}
-  //             ===== SYNC MODE =====
-else if(mode === "mirror"){
-
-  // 🔥 already verified?
-  if(sessionStorage.getItem("syncVerified") === "true"){
     return true;
   }
 
-  showAccessPopup("mirror");
-return false;
+  // ===== SYNC MODE =====
+  if(mode === "mirror"){
 
-  // ✅ SAVE SESSION
-  sessionStorage.setItem("syncVerified","true");
+    if(sessionStorage.getItem("syncVerified") === "true"){
+      return true;
+    }
 
-  return true;
-}
+    showAccessPopup("mirror");
+    return false;
+  }
 
-  // ================= CLOUD MODE =================
-  else if(mode === "remote"){
+  // ===== CLOUD MODE =====
+  if(mode === "remote"){
 
     if(sessionStorage.getItem("cloudVerified") === "true"){
       return true;
     }
-    showAccessPopup("remote");
-return false;
 
-    return true;
+    showAccessPopup("remote");
+    return false;
   }
 
   return true;
 }
+
 /* =====================================
    QR GENERATOR (OPTIMIZED + SAFE)
 ===================================== */
@@ -1421,13 +1409,19 @@ function loadQRSafe(){
 
   const qrContainer = document.getElementById("qrCode");
   const linkBox = document.getElementById("shareLink");
+  const mode = JSON.parse(localStorage.getItem("micropmu_settings") || "{}").networkMode;
+
+document.getElementById("qrLabel").innerText =
+  mode === "remote" ? "🌐 Cloud Access" :
+  mode === "mirror" ? "📡 Local Sync" :
+  "🖥 Admin Mode";
 
   if(!qrContainer || !linkBox) return;
 
   try{
 
-    const currentURL = window.location.origin;
-    linkBox.value = currentURL;
+    const currentURL = getSmartLink();
+    linkBox.value = getSmartLink();
 
     // Clear old QR (important)
     qrContainer.innerHTML = "";
@@ -1478,7 +1472,7 @@ loadQRSafe();
 });
 
 /*********************************
- SETTINGS + MODE + QR ENGINE
+ SETTINGS + MODE 
 *********************************/
 
 // Load saved settings
@@ -1495,36 +1489,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 });
 
-
-/* ================= LINK GENERATOR ================= */
-
-function generateLink(){
-
- const linkBox = document.getElementById("shareLink");
- if(!linkBox) return;
-
- const currentURL = window.location.origin;
- linkBox.value = currentURL;
-}
-
-/* ================= QR GENERATOR ================= */
-
-function generateQR(){
-
- const qrContainer = document.getElementById("qrCode");
- if(!qrContainer) return;
-
- qrContainer.innerHTML = "";
-
- const script = document.createElement("script");
- script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-
- script.onload = ()=>{
-   new QRCode(qrContainer, window.location.origin);
- };
-
- document.head.appendChild(script);
-}
 
 /*************************************************
  FINAL GLOBAL SETTINGS BUTTONS FIX
@@ -1591,16 +1555,28 @@ window.testBuzzer = function(){
   }
 };
 
+/*********************************
+  QR ENGINE
+*********************************/
+
 /* ================= LINK GENERATOR ================= */
 
-window.generateLink = function(){
+function getSmartLink(){
 
-  const linkBox = document.getElementById("shareLink");
-  if(!linkBox) return;
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+  const mode = settings.networkMode || "local";
 
-  linkBox.value = window.location.origin;
-};
+  if(mode === "remote"){
+    return "https://intelligrid-platform.netlify.app";
+  }
 
+  if(mode === "mirror"){
+    const ip = settings.deviceIP || "192.168.4.1";
+    return "http://" + ip;
+  }
+
+  return window.location.origin;
+}
 /* ================= QR GENERATOR ================= */
 
 window.generateQR = function(){
@@ -1614,7 +1590,7 @@ window.generateQR = function(){
   script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
 
   script.onload = function(){
-    new QRCode(qrContainer, window.location.origin);
+    new QRCode(qrContainer, getSmartLink());
   };
 
   document.head.appendChild(script);
