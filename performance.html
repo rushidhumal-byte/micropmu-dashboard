@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Analytics - Micro PMU</title>
+
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.performance-page .cards{
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+}
+
+.performance-page .card{
+padding:18px;
+min-height:95px;
+}
+
+.performance-page .card p{
+font-size:20px;
+font-weight:bold;
+}
+
+.performance-page .charts{
+grid-template-columns:1fr 1fr;
+margin-top:25px;
+}
+</style>
+</head>
+
+<body class="performance-page">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>Micro-PMU</h2>
+<a href="index.html">Dashboard</a>
+<a href="performance.html">Performance</a>
+<a href="live.html">Live Data</a>
+<a href="reports.html">Reports</a>
+<a href="export.html">Exports</a>
+<a href="settings.html">Settings</a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<h1>📊 Performance & Efficiency Analytics</h1>
+
+<!-- ================= PERFORMANCE STATUS STRIP ================= -->
+<div class="health-box" style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:20px;
+background:linear-gradient(135deg,#0f172a,#020617);
+border-left:4px solid #a855f7;
+padding:18px 25px;
+">
+
+<div>
+<h3 style="margin:0;font-weight:600;">
+📊 Performance Monitoring Console
+</h3>
+<p style="margin:5px 0 0 0;font-size:13px;opacity:0.8;">
+Advanced Electrical Performance & Energy Intelligence
+</p>
+</div>
+
+<div style="display:flex;gap:25px;flex-wrap:wrap;font-size:13px;">
+
+<div>
+<span style="opacity:0.7;">System Mode</span><br>
+<b id="perfMode">Simulation</b>
+</div>
+
+<div>
+<span style="opacity:0.7;">Sync Status</span><br>
+<b style="color:#22c55e;">● Active</b>
+</div>
+
+<div>
+<span style="opacity:0.7;">Sampling Rate</span><br>
+<b id="perfRate">1000 ms</b>
+</div>
+
+</div>
+
+</div>
+
+<!-- ================= PERFORMANCE CARDS ================= -->
+<div class="cards">
+
+<div class="card blue">
+<h3>Phase Angle (°)</h3>
+<p id="phaseAngleVal">0°</p>
+</div>
+
+<div class="card green">
+<h3>Load Demand</h3>
+<p id="load">0 kW</p>
+</div>
+
+<div class="card purple">
+<h3>Total Energy</h3>
+<p id="energy">0 kWh</p>
+</div>
+
+<div class="card orange">
+<h3>System Efficiency</h3>
+<p id="efficiency">0 %</p>
+</div>
+
+<div class="card cyan">
+<h3>Frequency Stability</h3>
+<p id="freqStability">100%</p>
+<p id="predictionText">Prediction: --</p>
+</div>
+
+<div class="card red">
+<h3>Voltage Stability</h3>
+<p id="vsi">100%</p>
+</div>
+
+</div>
+
+<!-- ================= PERFORMANCE GRAPHS ================= -->
+<div class="charts">
+
+<div class="chart-box">
+<h3>Phase Angle Behaviour</h3>
+<canvas id="pfChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Load Demand Analysis</h3>
+<canvas id="loadChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Energy Consumption Curve</h3>
+<canvas id="energyChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Efficiency Stability Index</h3>
+<canvas id="effChart"></canvas>
+</div>
+
+</div>
+
+</div>
+
+<!-- 🔐 ACCESS POPUP ADD HERE -->
+<div id="accessPopup" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  opacity:0;
+  transition:0.3s;
+">
+
+  <div style="
+    background:#0f172a;
+    padding:25px;
+    border-radius:12px;
+    width:300px;
+    text-align:center;
+  ">
+
+    <h3 style="color:#38bdf8;margin-bottom:10px;">
+      🔐 Secure Access
+    </h3>
+
+    <p id="accessModeText" style="font-size:13px;color:#94a3b8;">
+      Enter Access Key
+    </p>
+
+    <div style="position:relative;margin-top:10px;">
+
+      <input type="password" id="accessPass" placeholder="Enter password">
+
+      <span id="eyeIcon" onclick="togglePass()" 
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+        👁
+      </span>
+
+    </div>
+
+    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+      Attempts left: 3
+    </p>
+
+    <button onclick="submitAccess()" 
+      style="margin-top:15px;width:100%;height:40px;background:#22c55e;color:#000;border:none;border-radius:8px;">
+      Unlock
+    </button>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

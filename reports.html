@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Reports - Micro PMU</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.report-controls{
+margin-bottom:25px;
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+}
+
+.report-controls button{
+padding:8px 18px;
+border:none;
+background:#2563eb;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
+
+.report-controls button:hover{
+background:#1d4ed8;
+}
+
+.billing-box{
+background:#020617;
+padding:25px;
+border-radius:15px;
+box-shadow:0 0 20px black;
+margin-bottom:25px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>Micro-PMU</h2>
+<a href="index.html">Dashboard</a>
+<a href="performance.html">Performance</a>
+<a href="live.html">Live Data</a>
+<a href="reports.html">Reports</a>
+<a href="export.html">Exports</a>
+<a href="settings.html">Settings</a>
+</div>
+
+<div class="main">
+
+<h1>📂 Audit Reports & Energy Analysis</h1>
+
+<!-- BILLING -->
+<div class="billing-box">
+<h3>💰 Smart Energy Billing Calculator</h3>
+
+<div class="billing-row">
+<label for="calcPower">Load (kW)</label>
+<input type="number" id="calcPower">
+
+<label>PF</label>
+<input type="number" id="calcPF" value="0.95" step="0.01">
+
+<label>Usage (Hours)</label>
+<input type="number" id="calcHours" value="6">
+</div>
+
+<div class="billing-row">
+<label>Consumer</label>
+<select id="consumerType">
+  <option value="res">Residential</option>
+  <option value="com">Commercial</option>
+</select>
+
+<label>Phase</label>
+<select id="supplyPhase">
+  <option value="1">Single Phase</option>
+  <option value="3">Three Phase</option>
+</select>
+
+<label>Supply</label>
+<select id="supplyType">
+  <option value="LT">LT</option>
+  <option value="HT">HT</option>
+</select>
+</div>
+
+<div style="margin-top:15px;">
+<button onclick="calculateBill()">Calculate Bill</button>
+<button onclick="downloadBill()">Download Bill</button>
+</div>
+
+<hr>
+
+<p>Total Units: <b id="unitResult">0 kWh</b></p>
+<p>Estimated Bill: <b id="billResult">₹0</b></p>
+<img src="msedcl-logo.png" class="logo">
+</div>
+
+
+<!-- REPORT BUTTONS -->
+<div class="report-controls">
+<button onclick="showDaily()">Daily Report</button>
+<button onclick="showWeekly()">Weekly Report</button>
+<button onclick="showMonthly()">Monthly Report</button>
+</div>
+
+<!-- REPORT CHARTS -->
+<div class="charts">
+
+<div class="chart-box">
+<h3 id="reportTitle">Voltage vs Time</h3>
+<canvas id="reportVoltage"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Current vs Time</h3>
+<canvas id="reportCurrent"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Power vs Time</h3>
+<canvas id="reportPower"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Power Factor vs Time</h3>
+<canvas id="reportPF"></canvas>
+</div>
+
+</div>
+
+</div>
+
+<!-- 🔐 ACCESS POPUP ADD HERE -->
+<div id="accessPopup" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  opacity:0;
+  transition:0.3s;
+">
+
+  <div style="
+    background:#0f172a;
+    padding:25px;
+    border-radius:12px;
+    width:300px;
+    text-align:center;
+  ">
+
+    <h3 style="color:#38bdf8;margin-bottom:10px;">
+      🔐 Secure Access
+    </h3>
+
+    <p id="accessModeText" style="font-size:13px;color:#94a3b8;">
+      Enter Access Key
+    </p>
+
+    <div style="position:relative;margin-top:10px;">
+
+      <input type="password" id="accessPass" placeholder="Enter password">
+
+      <span id="eyeIcon" onclick="togglePass()" 
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+        👁
+      </span>
+
+    </div>
+
+    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+      Attempts left: 3
+    </p>
+
+    <button onclick="submitAccess()" 
+      style="margin-top:15px;width:100%;height:40px;background:#22c55e;color:#000;border:none;border-radius:8px;">
+      Unlock
+    </button>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

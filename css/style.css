@@ -1,0 +1,497 @@
+/* =====================================
+   GLOBAL BODY
+===================================== */
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:#020617;
+  color:white;
+  display:flex;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* =====================================
+   SIDEBAR
+===================================== */
+.sidebar{
+  width:220px;
+  background:#020024;
+  min-height:100vh;
+  padding:20px;
+  flex-shrink:0;
+}
+
+.sidebar h2{
+  color:#38bdf8;
+  text-align:center;
+  margin-bottom:20px;
+}
+
+.sidebar a{
+  display:block;
+  color:white;
+  padding:12px;
+  text-decoration:none;
+  border-radius:6px;
+  margin-bottom:8px;
+  transition:0.3s;
+}
+
+.sidebar a:hover{
+  background:#2563eb;
+}
+
+/* =====================================
+   MAIN AREA
+===================================== */
+.main{
+  flex:1;
+  padding:25px;
+  background:linear-gradient(135deg,#020024,#0f172a,#020024);
+}
+
+h1{
+  margin-bottom:18px;
+}
+
+/* =====================================
+   HEALTH BOX
+===================================== */
+.health-box{
+  background:#020617;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  margin-bottom:20px;
+}
+
+/* =====================================
+   DASHBOARD CARDS (FIXED SIZE)
+===================================== */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:15px;
+  margin-bottom:20px;
+}
+.card{
+  height:95px;
+  padding:14px;
+  border-radius:12px;
+  text-align:center;
+  font-size:14px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  transition:0.2s;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.card:hover{
+  transform:translateY(-2px);
+}
+
+.card h3{
+  font-size:13px;
+  margin-bottom:6px;
+}
+
+.card p{
+  font-size:18px;
+  font-weight:bold;
+}
+
+#modeLabel, #deviceCount, #systemModeLabel{
+  color:#38bdf8;
+  font-weight:bold;
+}
+/* =====================================
+   CARD COLORS
+===================================== */
+.blue{ background:linear-gradient(135deg,#f97316,#ea580c); }
+.green{ background:linear-gradient(135deg,#134e5e,#71b280); }
+.orange{ background:linear-gradient(135deg,#f7971e,#ffd200); color:#000; }
+.purple{ background:linear-gradient(135deg,#42275a,#734b6d); }
+.cyan{ background:linear-gradient(135deg,#0891b2,#06b6d4); }
+.red{ background:linear-gradient(135deg,#7f1d1d,#ef4444); }
+
+/* =====================================
+   STATUS STYLE
+===================================== */
+.status.normal{
+  background:linear-gradient(135deg,#064e3b,#15803d);
+}
+
+.status.alert{
+  background:linear-gradient(135deg,#78350f,#f97316);
+}
+
+.status.danger{
+  background:linear-gradient(135deg,#7f1d1d,#dc2626);
+  animation:blink 1s infinite;
+}
+
+@keyframes blink{
+  0%{opacity:1;}
+  50%{opacity:0.6;}
+  100%{opacity:1;}
+}
+
+/* =====================================
+   PHASE INDICATORS (FIXED)
+===================================== */
+.phase-strip{
+  display:flex;
+  align-items:center;
+  gap:25px;
+  margin-bottom:12px;
+  font-size:14px;
+}
+
+.phase{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.phase-dot{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  border:none;
+}
+
+.phase-r{ background:red; }
+.phase-y{ background:yellow; }
+.phase-b{ background:#38bdf8; }
+
+/* =====================================
+   CHARTS
+===================================== */
+.charts{
+  margin-top:20px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+
+.chart-box{
+  background:#020617;
+  padding:18px;
+  border-radius:12px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+}
+
+canvas{
+  height:260px !important;
+}
+
+/* =====================================
+   PHASOR
+===================================== */
+#phasorCanvas{
+  background:#020617;
+  border-radius:12px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+}
+
+/* =====================================
+   BUZZER ICON
+===================================== */
+.buzzer-box{
+  position:absolute;
+  right:30px;
+  top:20px;
+  font-size:22px;
+  cursor:pointer;
+  background:#020617;
+  padding:8px 12px;
+  border-radius:10px;
+  box-shadow:0 0 10px #38bdf8;
+}
+
+.buzzer-muted{
+  box-shadow:0 0 10px red;
+  opacity:0.6;
+}
+
+/* =====================================
+   SETTINGS GRID
+===================================== */
+.settings-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:25px;
+  margin-top:25px;
+}
+
+.setting-card{
+  background: #0f172a;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-height: 200px;
+}
+
+.setting-card h3{
+  color:#38bdf8;
+  margin-bottom:15px;
+}
+.setting-card{
+min-height:200px;
+}
+
+/* =====================================
+   MEMORY BAR
+===================================== */
+.memory-bar-container{
+  background:#0f172a;
+  height:18px;
+  border-radius:8px;
+  overflow:hidden;
+  margin-top:8px;
+}
+
+.memory-bar{
+  height:100%;
+  width:0%;
+  background:#22c55e;
+  transition:0.4s;
+}
+
+/* =====================================
+   EXPORT PANEL
+===================================== */
+.export-panel{
+  background:#020617;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  margin-bottom:20px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:15px;
+}
+
+/* =====================================
+   BUTTONS
+===================================== */
+input,button{
+  border-radius:6px;
+  border:none;
+}
+
+button:hover{
+  background:#1d4ed8;
+}
+
+.save-btn{
+  background:#22c55e;
+  color:black;
+  font-weight:bold;
+}
+
+/* =====================================
+   MOBILE
+===================================== */
+@media(max-width:900px){
+
+  .cards{
+    justify-content:center;
+  }
+
+  .sidebar{
+    width:180px;
+  }
+
+  .charts{
+    grid-template-columns:1fr;
+  }
+
+  .settings-grid{
+    grid-template-columns:1fr;
+  }
+
+}
+
+/* =====================================
+   BILLING
+===================================== */
+
+.billing-row{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+align-items:center;
+margin-bottom:12px;
+}
+
+.billing-row label{
+min-width:90px;
+}
+
+
+/* =====================================
+   WIFI INDICATOR
+===================================== */
+
+.wifi-led{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#374151;
+  box-shadow:0 0 6px #000;
+}
+
+/* Signal bars container */
+.signal-bars{
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+}
+
+/* Individual bars */
+.signal-bars .bar{
+  width:4px;
+  background:#1e293b;
+  border-radius:2px;
+}
+
+.signal-bars .bar:nth-child(1){ height:6px; }
+.signal-bars .bar:nth-child(2){ height:9px; }
+.signal-bars .bar:nth-child(3){ height:12px; }
+.signal-bars .bar:nth-child(4){ height:15px; }
+
+/* ===== SETTINGS INPUT FIX ONLY ===== */
+
+.field label{
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.field input,
+.field select{
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 14px;
+}
+/* ===== CARD BORDER GLOW ===== */
+.field input,
+.field select{
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* ===== SETTINGS INPUT BACKGROUND ONLY ===== */
+.setting-card input,
+.setting-card select{
+  background: #1e293b;
+  color: #fff;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
+  width: 100%;
+}
+.setting-card input:focus,
+.setting-card select:focus{
+  outline: 1px solid #38bdf8;
+}
+
+/* hover effect */
+  .save-btn{
+  background:#22c55e !important;
+  color:#000;
+}
+
+/*******************************************************/
+/* ===== UNIFORM BUTTON STYLE (ALL BUTTONS SAME) ===== */
+/*******************************************************/
+button{
+  width: 44%;
+  height: 38px;
+  background: #7264f4;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  transition: 0.3s;
+}
+
+.save-btn{
+  width: 260px;
+  height: 44px;
+  display:block;
+  margin: 30px auto;   /* 🔥 center */
+  font-size: 15px;
+  background:#22c55e !important;
+  color:#000;
+}
+
+.btn-test{
+  width: 44%;        /* full width Control */
+  height: 38px;       /* Small size */
+  padding: 0 12px;    /* side spacing */
+  font-size: 13px;
+}
+
+.btn-small{
+  width: 83%;
+  padding: 6px 12px;
+  height: 38px;
+  font-size: 13px;
+}
+
+.gps-check{
+  display:flex;
+  align-items:center;              /* vertical center */
+  justify-content:space-between;   /* left text, right box */
+  width:100%;
+  font-size:14px;
+}
+
+.gps-check span{
+  flex:1;                          /* text left push karega */
+  position: relative;
+  top: -3px;   /* 🔥 yaha se up-down control */
+}
+
+.gps-check input{
+  width:16px;
+  height:16px;
+  margin-left:6px;                /* 🔥 gap between text & box */
+  cursor:pointer;
+}
+
+/* ===== ACCESS POPUP INPUT ===== */
+#accessPass{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  background:#1e293b;
+  color:#fff;
+  border:none;
+  outline:none;
+}
+
+

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Control Panel - Micro PMU</title>
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+
+.setting-card label{
+display:block;
+font-size:13px;
+margin-top:8px;
+opacity:0.85;
+}
+.setting-card input,
+.setting-card select{
+width:100%;
+max-width:220px;
+padding:7px 10px;
+font-size:13px;
+margin-top:4px;
+border-radius:6px;
+}
+.setting-card button{
+margin-top:10px;
+cursor:pointer;
+}
+.admin-box{
+background:#111827;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>Micro-PMU</h2>
+<a href="index.html">Dashboard</a>
+<a href="performance.html">Performance</a>
+<a href="live.html">Live Data</a>
+<a href="reports.html">Reports</a>
+<a href="export.html">Exports</a>
+<a href="settings.html">Settings</a>
+</div>
+
+<div class="main">
+
+<h1>⚙ System Control & Protection Configuration</h1>
+
+<div class="health-box">
+<h3>Industrial Configuration Console</h3>
+<p>Protection tuning, GPS sync, sampling control, remote access & secure admin management.</p>
+</div>
+
+<div class="settings-grid">
+
+<!-- SYSTEM MODE -->
+<div class="setting-card">
+
+<h3>🖥 System Mode</h3>
+
+<label>Select Mode</label>
+<select id="systemMode">
+<option value="simulation">Simulation Demo</option>
+<option value="esp">ESP32 Live Monitoring</option>
+<option value="hybrid">Hybrid Mode</option>
+</select>
+
+<label>Processing Mode</label>
+<select id="processingMode">
+<option value="realtime">Real-Time Monitoring</option>
+<option value="filtered">Filtered Monitoring</option>
+<option value="analysis">Analysis Mode (CSV Dataset)</option>
+</select>
+<label>Upload Analysis Dataset (CSV)</label>
+<input type="file" id="analysisFile" accept=".csv">
+
+<p style="font-size:12px;opacity:0.7;">
+CSV format: time,voltage,current,frequency,pf,power
+</p>
+<label>Analysis Window</label>
+<select id="analysisWindow">
+<option value="100">Short Term (100 samples)</option>
+<option value="500">Medium Term (500 samples)</option>
+<option value="2000">Long Term (2000 samples)</option>
+</select>
+
+</div>
+
+<!-- ESP / WIFI CONNECTION -->
+<div class="setting-card">
+
+<h3>📡 ESP / WiFi Connection</h3>
+
+<label>Connection Mode</label>
+<select id="connectionMode">
+<option value="auto">Auto Detect</option>
+<option value="manual">Manual IP</option>
+</select>
+
+<label>ESP Device IP</label>
+<input type="text" id="deviceIP" value="192.168.4.1">
+
+<label>Connection Timeout (ms)</label>
+<input type="number" id="espTimeout" value="2000">
+
+<label>Auto Reconnect</label>
+<select id="autoReconnect">
+<option value="on">Enabled</option>
+<option value="off">Disabled</option>
+</select>
+
+<label>Scan Interval (sec)</label>
+<input type="number" id="scanInterval" value="5">
+
+<button class="btn-test" onclick="testESPConnection()">Test Connection</button>
+
+<p style="font-size:12px;opacity:0.7;">
+Auto detect works if ESP is on same network.
+</p>
+
+</div>
+
+
+<!-- Voltage -->
+<div class="setting-card">
+<h3>⚡ Voltage Protection</h3>
+<label>Min Voltage (V)</label>
+<input type="number" id="vmin" value="215">
+<label>Max Voltage (V)</label>
+<input type="number" id="vmax" value="235">
+</div>
+
+<!-- Frequency -->
+<div class="setting-card">
+<h3>🔁 Frequency Protection</h3>
+<label>Min Frequency (Hz)</label>
+<input type="number" id="fmin" value="49">
+<label>Max Frequency (Hz)</label>
+<input type="number" id="fmax" value="51">
+</div>
+
+<!-- Thresholds -->
+<div class="setting-card">
+<h3>🔥 Advanced Protection Thresholds</h3>
+<label>Overload Current (A)</label>
+<input type="number" id="overloadLimit" value="10">
+<label>Short Circuit Limit (A)</label>
+<input type="number" id="shortLimit" value="15">
+<label>Minimum Power Factor</label>
+<input type="number" id="pfMin" value="0.85" step="0.01">
+<label>Maximum Temperature (°C)</label>
+<input type="number" id="tempMax" value="60">
+</div>
+
+<!-- GPS -->
+<div class="setting-card">
+  <h3>🛰 GPS Configuration</h3>
+
+ <label class="gps-check">
+  <span>Enable GPS Sync</span>
+  <input type="checkbox" id="gpsEnable">
+</label>
+
+  <label>Latitude</label>
+  <input type="number" id="gpsLat" step="0.0001" min="-90" max="90">
+
+  <label>Longitude</label>
+  <input type="number" id="gpsLng" step="0.0001" min="-180" max="180">
+  <button class="btn-test" onclick="testGPS()">Test GPS System</button>
+</div>
+
+<div class="setting-card">
+  <h3>🔄 Live Sampling</h3>
+
+  <div class="field">
+    <label>Sampling Rate (ms)</label>
+    <input type="number" id="samplingRate" value="1000" min="200">
+  </div>
+
+  <div class="field">
+    <label>Graph History Window</label>
+    <select id="graphPoints">
+      <option value="20">20 Samples</option>
+      <option value="50">50 Samples</option>
+      <option value="100">100 Samples</option>
+      <option value="200">200 Samples</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Auto Refresh</label>
+    <select id="autoRefresh"> 
+      <option value="on">Enabled</option>
+      <option value="off">Disabled</option>
+    </select>
+  </div>
+  
+  <button class="reset-btn" onclick="resetGraphs()">🔄Reset Graph History</button> <button onclick="clearFaultHistory()">
+🧹 Clear Fault History
+</button>
+
+</div>
+
+<!-- Logging -->
+<div class="setting-card">
+<h3>⏱ Data Logging</h3>
+<label>Energy Tariff (₹/kWh)</label>
+<input type="number" id="tariff" value="8" step="0.1">
+<label>Fixed Charge (₹)</label>
+<input type="number" id="fixedCharge" value="50">
+<label>Interval Value</label>
+<input type="number" id="logValue" value="1" min="1">
+<label>Unit</label>
+<select id="logUnit">
+<option value="sec">Seconds</option>
+<option value="min">Minutes</option>
+<option value="hr">Hours</option>
+</select>
+</div>
+
+<!-- Alarm -->
+<div class="setting-card">
+
+<h3>🚨 Alarm & Buzzer Control</h3>
+
+<div style="display:flex;gap:25px;flex-wrap:wrap;">
+
+<!-- DASHBOARD BUZZER -->
+<div style="flex:1;min-width:180px;">
+
+<h4>💻 Dashboard Alarm</h4>
+
+<label>Alarm Mode</label>
+<select id="dashBuzzerMode">
+<option value="auto">Auto Fault Alarm</option>
+<option value="manual">Manual Control</option>
+<option value="off">Disabled</option>
+</select>
+
+<button class="btn-small" onclick="testBuzzer()">Test Dashboard Buzzer</button>
+
+<p style="font-size:12px;opacity:0.7;">
+Sound played from browser when fault detected.
+</p>
+
+</div>
+
+<!-- MODEL BUZZER -->
+<div style="flex:1;min-width:180px;">
+
+<h4>⚡ Model Hardware Buzzer</h4>
+
+<label>Hardware Alarm</label>
+<select id="modelBuzzerMode">
+<option value="auto">Auto Fault Alarm</option>
+<option value="manual">Manual Control</option>
+<option value="off">Disabled</option>
+</select>
+
+<button class="btn-small" onclick="toggleModelBuzzer()">Test Model Buzzer</button>
+<label>Alarm Sensitivity</label>
+<select id="alarmSensitivity">
+<option value="low">Low</option>
+<option value="medium">Medium</option>
+<option value="high">High</option>
+</select>
+
+<p style="font-size:12px;opacity:0.7;">
+Controls ESP32 physical buzzer on the monitoring model.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- Remote Access -->
+<div class="setting-card">
+<h3>📱 Remote Access (QR & Link)</h3>
+<button onclick="generateLink()">Generate Link</button>
+<input type="text" id="shareLink" readonly>
+<button onclick="generateQR()">Generate QR</button>
+<label>Network Access Mode</label>
+<select id="networkMode">
+<option value="local">Admin Mode</option>
+<option value="mirror">Sync Mode</option>
+<option value="remote">Cloud Mode</option>
+</select>
+<button class="btn-danger" onclick="logoutAccess()">🚪 Logout Access</button>
+<p style="font-size:12px;opacity:0.7;">
+Controls how other devices access the Micro-PMU dashboard.
+</p>
+
+
+<div id="qrCode" style="margin-top:10px;"></div>
+</div>
+
+<!-- Storage -->
+<div class="setting-card">
+<h3>💾 Storage Usage</h3>
+<div style="background:#0f172a;height:20px;border-radius:8px;overflow:hidden;
+            border:2px solid #38bdf8;
+            width:100%;              /* 🔥 full available space */
+            max-width:350px;         /* 🔥 limit on desktop */
+            margin:10px auto;">      <!-- 🔥 center align -->
+
+  <div id="memoryBar" style="height:100%;width:0%;background:#22c55e;"></div>
+
+</div>
+
+<p style="margin-top:8px;text-align:center;">
+  Storage Used: <b id="memoryText">0%</b>
+</p>
+
+<button onclick="secureResetEnergy()">Reset Energy Counter</button>
+<button onclick="secureClearLogs()">Clear Browser Logs</button>
+</div>
+
+<!-- Admin -->
+<div class="setting-card">
+<h3>🔐 Admin Security</h3>
+<div class="admin-box">
+<label>Password</label>
+<form onsubmit="return false;">
+  <input type="password" id="adminPass">
+</form>
+<button onclick="verifyAdmin()">Verify</button>
+<p style="font-size:12px;opacity:0.7;">
+Password required once per tab session.
+</p>
+</div>
+</div>
+
+</div>
+
+<div style="margin-top:30px;text-align:center;">
+<button type="button" onclick="saveSettings()" class="save-btn">
+💾 Save System Configuration
+
+</button>
+</div>
+
+</div>
+
+
+<!-- 🔐 ACCESS POPUP ADD HERE -->
+<div id="accessPopup" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  opacity:0;
+  transition:0.3s;
+">
+
+  <div style="
+    background:#0f172a;
+    padding:25px;
+    border-radius:12px;
+    width:300px;
+    text-align:center;
+  ">
+
+    <h3 style="color:#38bdf8;margin-bottom:10px;">
+      🔐 Secure Access
+    </h3>
+
+    <p id="accessModeText" style="font-size:13px;color:#94a3b8;">
+      Enter Access Key
+    </p>
+
+    <div style="position:relative;margin-top:10px;">
+
+      <input type="password" id="accessPass" placeholder="Enter password">
+
+      <span id="eyeIcon" onclick="togglePass()" 
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+        👁
+      </span>
+
+    </div>
+
+    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+      Attempts left: 3
+    </p>
+
+    <button onclick="submitAccess()" 
+      style="margin-top:15px;width:100%;height:40px;background:#22c55e;color:#000;border:none;border-radius:8px;">
+      Unlock
+    </button>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

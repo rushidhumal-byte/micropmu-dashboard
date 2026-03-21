@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Micro-PMU Dashboard</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+<h2>Micro-PMU</h2>
+<a href="index.html">Dashboard</a>
+<a href="performance.html">Performance</a>
+<a href="live.html">Live Data</a>
+<a href="reports.html">Reports</a>
+<a href="export.html">Exports</a>
+<a href="settings.html">Settings</a>
+</div>
+
+<!-- ================= MAIN ================= -->
+<div class="main">
+
+<h1>Distribution Monitoring Panel</h1>
+
+<!-- ================= PHASE + WIFI STRIP ================= -->
+<div class="phase-strip">
+
+<div class="phase">
+<div class="phase-dot phase-r" id="phaseR"></div>
+<span>R Phase</span>
+</div>
+
+<div class="phase">
+<div class="phase-dot phase-y" id="phaseY"></div>
+<span>Y Phase</span>
+</div>
+
+<div class="phase">
+<div class="phase-dot phase-b" id="phaseB"></div>
+<span>B Phase</span>
+</div>
+
+<!-- RIGHT SIDE PANEL -->
+<div style="margin-left:auto;display:flex;align-items:center;gap:25px;">
+
+  <!-- WIFI -->
+  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+    <span style="opacity:0.8;">WiFi</span>
+
+    <div id="wifiLed" class="wifi-led"></div>
+
+    <div class="signal-bars" id="signalBars">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+
+    <span id="wifiLatency">-- ms</span>
+  </div>
+
+</div>
+
+</div>
+
+<!-- ================= BUZZER CONTROL ================= -->
+<!-- ================= TOP RIGHT STATUS (LEFT OF BUZZER) ================= -->
+<div style="
+position:absolute;
+right:120px;
+top:20px;
+display:grid;
+grid-template-columns:auto auto auto;
+row-gap:6px;
+column-gap:6px;
+font-size:13px;
+align-items:center;
+">
+
+  <b>🖥 Dashboard Mode</b>
+  <b>:</b>
+  <span id="modeLabel">Admin Mode</span>
+
+  <b>📡 Sync Devices</b>
+  <b>:</b>
+  <span id="deviceCount">0</span>
+
+  <b>⚙ System Mode</b>
+  <b>:</b>
+  <span id="systemModeLabel">Simulation</span>
+
+</div>
+
+<!-- BUZZER (UNCHANGED POSITION) -->
+<div class="buzzer-box" id="buzzerBox" onclick="toggleBuzzerMute()">
+🔊
+</div>
+
+<!-- ================= DASHBOARD CARDS ================= -->
+<div class="cards">
+
+<div class="card blue">
+<h3>Grid Voltage</h3>
+<p id="v">0 V</p>
+</div>
+
+<div class="card green">
+<h3>Load Current</h3>
+<p id="c">0 A</p>
+</div>
+
+<div class="card orange">
+<h3>Frequency</h3>
+<p id="f">0 Hz</p>
+</div>
+
+<div class="card status normal" id="statusCard">
+<h3>Status</h3>
+<p id="statusText">SYSTEM HEALTHY</p>
+
+<!-- 🔥 ADDed INSIDE CARD -->
+<p id="faultTimeBox" style="font-size:12px;opacity:0.8;margin-top:5px;">
+Fault: <span id="faultTime">--</span>
+</p>
+
+</div>
+
+
+<div class="card purple">
+<h3>Power</h3>
+<p id="p">0 W</p>
+</div>
+
+<div class="card cyan">
+<h3>Power Factor</h3>
+<p id="pfVal">0.00</p>
+</div>
+
+<div class="card red">
+<h3>Temperature</h3>
+<p id="temp">0 °C</p>
+</div>
+
+</div>
+
+<!-- ================= REAL-TIME GRAPHS ================= -->
+<div class="charts">
+
+<div class="chart-box">
+<h3>Voltage Trend</h3>
+<canvas id="voltageChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Current Trend</h3>
+<canvas id="currentChart"></canvas>
+</div>
+
+</div>
+
+</div>
+
+<!-- Load main.js at end -->
+<script src="js/main.js"></script>
+
+<!-- 🔐 ACCESS POPUP ADD HERE -->
+<div id="accessPopup" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  opacity:0;
+  transition:0.3s;
+">
+
+  <div style="
+    background:#0f172a;
+    padding:25px;
+    border-radius:12px;
+    width:300px;
+    text-align:center;
+  ">
+
+    <h3 style="color:#38bdf8;margin-bottom:10px;">
+      🔐 Secure Access
+    </h3>
+
+    <p id="accessModeText" style="font-size:13px;color:#94a3b8;">
+      Enter Access Key
+    </p>
+
+    <div style="position:relative;margin-top:10px;">
+
+      <input type="password" id="accessPass" placeholder="Enter password">
+
+      <span id="eyeIcon" onclick="togglePass()" 
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+        👁
+      </span>
+
+    </div>
+
+    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+      Attempts left: 3
+    </p>
+
+    <button onclick="submitAccess()" 
+      style="margin-top:15px;width:100%;height:40px;background:#22c55e;color:#000;border:none;border-radius:8px;">
+      Unlock
+    </button>
+
+  </div>
+</div>
+
+</body>
+</html>

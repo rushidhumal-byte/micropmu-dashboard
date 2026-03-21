@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Diagnostics - Micro PMU</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="live-page">
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+<h2>Micro-PMU</h2>
+<a href="index.html">Dashboard</a>
+<a href="performance.html">Performance</a>
+<a href="live.html">Live Data</a>
+<a href="reports.html">Reports</a>
+<a href="export.html">Exports</a>
+<a href="settings.html">Settings</a>
+</div>
+
+<!-- ================= MAIN ================= -->
+<div class="main">
+
+<h1>⚡ Live Diagnostics — Waveform & Phasor Lab</h1>
+
+<!-- ================= STATUS STRIP ================= -->
+<div class="health-box" style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:20px;
+background:linear-gradient(135deg,#0f172a,#020617);
+border-left:4px solid #38bdf8;
+padding:18px 25px;
+">
+
+<div>
+<h3 style="margin:0;font-weight:600;">
+⚡ Live Grid Intelligence Console
+</h3>
+<p style="margin:5px 0 0 0;font-size:13px;opacity:0.8;">
+Real-Time Electrical Signal Analytics • Phasor Synchronization • Stability Tracking
+</p>
+</div>
+
+<div style="display:flex;gap:25px;flex-wrap:wrap;font-size:13px;">
+
+<div>
+<span style="opacity:0.7;">System Mode</span><br>
+<b id="liveMode">Simulation</b>
+</div>
+
+<div>
+<span style="opacity:0.7;">Sync Status</span><br>
+<b id="syncStatus">● Active</b>
+</div>
+
+<div>
+<span style="opacity:0.7;">Sampling Rate</span><br>
+<b id="liveRate">1000 ms</b>
+</div>
+
+</div>
+
+</div>
+
+<!-- ================= LIVE CHART GRID ================= -->
+<div class="charts">
+
+<div class="chart-box">
+<h3>Grid Voltage Oscilloscope</h3>
+<canvas id="liveVoltage"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Load Current Oscilloscope</h3>
+<canvas id="liveCurrent"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Grid Frequency Stability</h3>
+<canvas id="liveFrequency"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Active Power Behaviour</h3>
+<canvas id="livePower"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>⚡ Phasor Diagram (Voltage & Current)</h3>
+<canvas id="phasorCanvas" width="300" height="300"></canvas>
+</div>
+
+</div>
+
+</div>
+
+<!-- Load main.js -->
+<script src="js/main.js"></script>
+
+<!-- 🔐 ACCESS POPUP ADD HERE -->
+<div id="accessPopup" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  opacity:0;
+  transition:0.3s;
+">
+
+  <div style="
+    background:#0f172a;
+    padding:25px;
+    border-radius:12px;
+    width:300px;
+    text-align:center;
+  ">
+
+    <h3 style="color:#38bdf8;margin-bottom:10px;">
+      🔐 Secure Access
+    </h3>
+
+    <p id="accessModeText" style="font-size:13px;color:#94a3b8;">
+      Enter Access Key
+    </p>
+
+    <div style="position:relative;margin-top:10px;">
+
+      <input type="password" id="accessPass" placeholder="Enter password">
+
+      <span id="eyeIcon" onclick="togglePass()" 
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+        👁
+      </span>
+
+    </div>
+
+    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+      Attempts left: 3
+    </p>
+
+    <button onclick="submitAccess()" 
+      style="margin-top:15px;width:100%;height:40px;background:#22c55e;color:#000;border:none;border-radius:8px;">
+      Unlock
+    </button>
+
+  </div>
+</div>
+
+</body>
+</html>

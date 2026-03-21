@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<title>Export & Audit Center - Micro PMU</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<!-- Chart.js added for safety (prevents console crash) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+/* ================= EXPORT PANEL ================= */
+
+.export-panel{
+background:#020617;
+padding:25px;
+border-radius:15px;
+box-shadow:0 4px 15px rgba(0,0,0,0.6);
+margin-bottom:25px;
+}
+
+.export-row{
+display:flex;
+flex-wrap:wrap;
+align-items:center;
+gap:15px;
+margin-bottom:15px;
+}
+
+.export-panel input,
+.export-panel select{
+padding:8px 12px;
+border-radius:6px;
+border:none;
+background:#0f172a;
+color:white;
+}
+
+.export-panel button{
+padding:10px 22px;
+border:none;
+border-radius:8px;
+background:#2563eb;
+color:white;
+cursor:pointer;
+}
+
+.export-panel button:hover{
+background:#1d4ed8;
+}
+
+.export-panel h3{
+margin-bottom:15px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+<h2>Micro-PMU</h2>
+<a href="index.html">Dashboard</a>
+<a href="performance.html">Performance</a>
+<a href="live.html">Live Data</a>
+<a href="reports.html">Reports</a>
+<a href="export.html">Exports</a>
+<a href="settings.html">Settings</a>
+</div>
+
+<!-- ================= MAIN ================= -->
+<div class="main">
+
+<h1>📂 Export & Audit Archive</h1>
+
+<div class="health-box">
+<h3>Professional Data Export Engine</h3>
+<p>
+Download date-wise telemetry logs, advanced fault reports, peak demand summary,
+and billing audit records directly from Micro-PMU local storage.
+</p>
+</div>
+
+<div id="timelinePanel" style="
+  max-height:200px;
+  overflow-y:auto;
+  background:#0f172a;
+  padding:10px;
+  border-radius:10px;
+  font-size:12px;
+">
+  <b>Event Timeline</b>
+  <div id="timelineList"></div>
+</div>
+
+<!-- ================= FILTER SECTION ================= -->
+<div class="export-panel">
+
+<h3>📅 Date & Filter Configuration</h3>
+
+<div class="export-row">
+<label>Start Date</label>
+<input type="date" id="startDate">
+
+<label>End Date</label>
+<input type="date" id="endDate">
+</div>
+
+<div class="export-row">
+<label>Export Mode</label>
+<select id="exportMode">
+<option value="full">Full Telemetry Data</option>
+<option value="fault">Only Fault Events</option>
+</select>
+
+<label>Parameter</label>
+<select id="paramSelect">
+<option value="all">All Parameters</option>
+<option value="voltage">Voltage Only</option>
+<option value="current">Current Only</option>
+<option value="power">Power Only</option>
+<option value="pf">Power Factor</option>
+</select>
+</div>
+
+<div class="export-row">
+<label>Compare</label>
+<select id="compareA">
+<option value="">None</option>
+<option value="voltage">Voltage</option>
+<option value="current">Current</option>
+<option value="power">Power</option>
+<option value="pf">Power Factor</option>
+</select>
+
+<label>VS</label>
+<select id="compareB">
+<option value="">None</option>
+<option value="voltage">Voltage</option>
+<option value="current">Current</option>
+<option value="power">Power</option>
+<option value="pf">Power Factor</option>
+</select>
+</div>
+
+<div class="export-row">
+<button onclick="exportCSV()">⬇ Export Advanced CSV</button>
+<button onclick="exportPDF()">⬇ Export Fault Report (PDF)</button>
+<button onclick="exportBilling()">⬇ Billing Audit Export</button>
+</div>
+
+</div>
+
+<!-- ================= INFO SECTION ================= -->
+<div class="health-box">
+
+<h3>📊 Export Contents</h3>
+
+<p>
+✔ Timestamp (Date & Time)<br>
+✔ Voltage, Current, Power & PF<br>
+✔ Phase Angle Analytics<br>
+✔ Peak Load Detection<br>
+✔ Fault Duration Auto Calculation<br>
+✔ Parameter Comparison Export<br>
+✔ Billing Audit Summary
+</p>
+
+</div>
+
+</div>
+
+<!-- IMPORTANT: Load JS at very end -->
+<script src="js/main.js"></script>
+
+<!-- 🔐 ACCESS POPUP ADD HERE -->
+<div id="accessPopup" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  opacity:0;
+  transition:0.3s;
+">
+
+  <div style="
+    background:#0f172a;
+    padding:25px;
+    border-radius:12px;
+    width:300px;
+    text-align:center;
+  ">
+
+    <h3 style="color:#38bdf8;margin-bottom:10px;">
+      🔐 Secure Access
+    </h3>
+
+    <p id="accessModeText" style="font-size:13px;color:#94a3b8;">
+      Enter Access Key
+    </p>
+
+    <div style="position:relative;margin-top:10px;">
+
+      <input type="password" id="accessPass" placeholder="Enter password">
+
+      <span id="eyeIcon" onclick="togglePass()" 
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+        👁
+      </span>
+
+    </div>
+
+    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+      Attempts left: 3
+    </p>
+
+    <button onclick="submitAccess()" 
+      style="margin-top:15px;width:100%;height:40px;background:#22c55e;color:#000;border:none;border-radius:8px;">
+      Unlock
+    </button>
+
+  </div>
+</div>
+
+</body>
+</html>
