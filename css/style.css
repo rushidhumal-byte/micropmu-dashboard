@@ -106,6 +106,59 @@ h1{
   color:#38bdf8;
   font-weight:bold;
 }
+
+.fault-strip{
+  margin-top: 10px;
+  padding: 4px 1px;   /* 🔥 height reduce (10px → 6px) */
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:140px;
+
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-left:4px solid #13e90b;
+  border-right:4px solid #13e90b; 
+
+  border-radius:10px;
+  font-size:13px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 4px rgba(255,255,255,0.1);
+}
+
+/* 🔥 STABLE BLOCKS (NO SHIFT) */
+.fault-strip > div{
+  flex:1;              /* equal width */
+  min-width:100px;     /* prevent shrink */
+  text-align:center;   /* center align */
+}
+
+/* 🔥 TEXT CENTER + NO JUMP */
+.fault-strip b{
+  display:block;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.fault-strip span{
+  display:block;
+  font-size:12px;
+  opacity:0.7;
+  text-align:center;
+}
+
+.fault-strip b{
+  display:block;
+  font-size:14px;
+  font-weight:bold;
+  margin-top:3px;
+  text-align:center;
+  min-width:90px;
+}
+
 /* =====================================
    CARD COLORS
 ===================================== */
@@ -176,6 +229,7 @@ h1{
   gap:20px;
 }
 
+
 .chart-box{
   background:#020617;
   padding:18px;
@@ -187,14 +241,21 @@ canvas{
   height:260px !important;
 }
 
+
+
 /* =====================================
    PHASOR
 ===================================== */
 #phasorCanvas{
-  background:#020617;
+  width:100% !important;
+  max-width:300px;
+  aspect-ratio:1/1;
+ background:#020617;
   border-radius:12px;
   box-shadow:0 4px 15px rgba(0,0,0,0.6);
 }
+
+
 
 /* =====================================
    BUZZER ICON
@@ -242,8 +303,9 @@ canvas{
   margin-bottom:15px;
 }
 .setting-card{
-min-height:200px;
+min-height:auto;
 }
+
 
 /* =====================================
    MEMORY BAR
@@ -322,18 +384,61 @@ button:hover{
    BILLING
 ===================================== */
 
-.billing-row{
-display:flex;
-gap:15px;
-flex-wrap:wrap;
-align-items:center;
-margin-bottom:12px;
+img{
+  display:block;
+}
+.billing-box{
+  width:100%;
+  max-width:1150px;   /* 👈 increase kar sakta hai (700–1000) */
 }
 
-.billing-row label{
-min-width:90px;
+.billing-grid{
+  width:100%;
+  display:grid;
+  grid-template-columns: repeat(210, 240px); /* 👈 fixed width */
+  gap: 60px;
+  margin-bottom:10px;
+  
 }
 
+.billing-grid:first-child{
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+}
+
+
+ .field input,
+.field select{
+  background:#1e293b;
+  color:#fff;
+  border:1px solid #ffffff;
+  border-radius:10px;
+  padding:8px;
+
+
+  /**********for same size of all buttons ******************/
+   width:100%;
+  height:42px;
+  box-sizing:border-box; 
+}
+
+
+/* Mobile fix */
+@media(max-width:768px){
+  .billing-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+.report-controls{
+  display:flex;
+  gap:16px;
+  margin-left:25px
+}
 
 /* =====================================
    WIFI INDICATOR
@@ -417,35 +522,38 @@ min-width:90px;
   color:#000;
 }
 
+
 /*******************************************************/
 /* ===== UNIFORM BUTTON STYLE (ALL BUTTONS SAME) ===== */
 /*******************************************************/
-button{
-  width: 44%;
-  height: 38px;
-  background: #7264f4;
-  color: #fff;
-  font-weight: 600;
-  border-radius: 10px;
-  cursor: pointer;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
 
-  font-size: 14px;
-  letter-spacing: 0.5px;
-  transition: 0.3s;
-}
 
 .save-btn{
   width: 260px;
-  height: 44px;
+  height: 44px;  
   display:block;
-  margin: 30px auto;   /* 🔥 center */
+  border-radius:8px;
+  margin: 0 auto;   /* 🔥 center inside box */
+
   font-size: 15px;
-  background:#22c55e !important;
+  background:#47dd7e !important;
   color:#000;
+}
+
+.save-box{
+  background:#181e37;
+  padding:15px;
+  border-radius:16px;
+
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);  /* 🔥 fixed */
+
+  width: fit-content;
+  height: 100px;
+
+  margin-top: -15px;
+  margin-left: auto;   /* 👉 push right */
+  margin-right: -170px;  /* 👉 adjust */
 }
 
 .btn-test{
@@ -453,6 +561,7 @@ button{
   height: 38px;       /* Small size */
   padding: 0 12px;    /* side spacing */
   font-size: 13px;
+
 }
 
 .btn-small{
@@ -461,6 +570,10 @@ button{
   height: 38px;
   font-size: 13px;
 }
+
+
+
+
 
 .gps-check{
   display:flex;
@@ -494,4 +607,288 @@ button{
   outline:none;
 }
 
+#qrCode{
+  width:180px;
+  height:180px;
 
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  position: absolute;   /* 🔥 MAIN FIX */
+  right: 90px;          /* adjust as needed */
+  top: 500px;           /* adjust to same position */
+}
+.qr-card{
+  position: relative;   /* 🔥 only this card affected */
+}
+#shareLink + span:hover{
+  transform:translateY(-50%) scale(1.2);
+}
+
+.health-box{
+  backdrop-filter: blur(6px);
+}
+
+/* ===== STATUS STRIP LABELS ===== */
+.health-box span{
+  color:#94a3b8;   /* light grey labels */
+  font-weight:500;
+}
+
+/* ===== VALUES COLOR CODING ===== */
+
+/* System Mode */
+#liveMode{
+  color:#38bdf8;   /* blue */
+  font-weight:600;
+}
+
+/* Sync Status */
+#syncStatus{
+  color:#22c55e;
+  font-weight:600;
+  text-shadow:0 0 6px #22c55e;
+}
+
+/* Sampling Rate */
+#liveRate{
+  color:#38bdf8;
+  font-weight:600;
+}
+
+/* ===== LABELS ===== */
+.health-box span{
+  color:#94a3b8;
+  font-weight:500;
+}
+
+/* ===== LIVE PAGE ===== */
+#liveMode{
+  color:#38bdf8;
+  font-weight:600;
+}
+
+#syncStatus{
+  color:#22c55e;
+  font-weight:600;
+  text-shadow:0 0 6px #22c55e;
+}
+
+#liveRate{
+  color:#38bdf8;
+  font-weight:600;
+}
+
+/* ===== PERFORMANCE PAGE ===== */
+
+/*====SYSTEM MODE=====*/
+#perfMode{
+  color:#38bdf8;
+  font-weight:600;
+}
+
+/*====SAMLPING RATE=====*/
+#perfRate{
+  color:#38bdf8;
+  font-weight:600;
+}
+
+/* ===== FAULT BLINK (BORDER ONLY) ===== */
+.fault-blink{
+  animation: faultBlink 1s infinite;
+}
+
+@keyframes faultBlink{
+
+  0%{
+    border-left:4px solid #ef4444;
+    border-right:4px solid #ef4444;
+  }
+
+  50%{
+    border-left:4px solid transparent;
+    border-right:4px solid transparent;
+  }
+
+  100%{
+    border-left:4px solid #ef4444;
+    border-right:4px solid #ef4444;
+  }
+
+}
+
+/*=============AI BUTTON================*/
+
+  #aiBtn{
+  display:flex;
+  align-items:center;
+  font-size:12px;
+  gap:10px;
+  transition:0.3s;
+  padding:4px 15px;
+  background:#0ea5e9;
+  color:white;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 6px rgba(255,255,255,0.1);
+}
+
+
+#aiBtn:hover{
+  transform:scale(1.1);
+  
+}
+
+
+/* ===== BACKGROUND OVERLAY ===== */
+.ai-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(6px);
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+/* ===== POPUP BOX ===== */
+.ai-box{
+  width:360px;
+  border-radius:14px;
+
+  background:rgba(15,23,42,0.85);
+  backdrop-filter:blur(12px);
+  
+  border:1px solid rgba(255,255,255,0.1);
+
+  box-shadow:0 0 25px rgba(17, 0, 0, 0.5);
+
+  animation:popIn 0.3s ease;
+}
+
+/* ===== HEADER ===== */
+.ai-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  padding:12px 15px;
+  border-bottom:1px solid #1e293b;
+
+  font-weight:600;
+}
+
+.ai-header button{
+  background:none;
+  border:none;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+/* ===== CONTENT ===== */
+.ai-content{
+  padding:15px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* ===== CARDS ===== */
+.ai-card{
+  background:#020617;
+  padding:10px;
+  border-radius:8px;
+
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+
+  border-left:3px solid #0ea5e9;
+}
+
+.ai-card label{
+  font-size:11px;
+  color:#94a3b8;
+}
+
+.ai-card span{
+  font-size:13px;
+  font-weight:500;
+}
+
+/* ===== EACH CARD UNIQUE COLOR ===== */
+
+/* 1. STATUS */
+.ai-card:nth-child(1){
+  border-left:3px solid #22c55e;
+  background:rgba(34,197,94,0.08);
+}
+
+/* 2. REASON */
+.ai-card:nth-child(2){
+  border-left:3px solid #1dbaef;
+  background:rgba(56,189,248,0.08);
+}
+
+/* 6. RECOMMENDATION */
+.ai-card:nth-child(6){
+  border-left:3px solid #eab308;
+  background:rgba(234,179,8,0.08);
+}
+
+
+/* 4. PREDICTION */
+.ai-card:nth-child(4){
+  border-left:3px solid #da0cbfd4;
+  background:rgba(249,115,22,0.08);
+}
+
+/* 3. RISK */
+.ai-card:nth-child(3){
+  border-left:3px solid #f23c05;
+  background:rgba(239,68,68,0.08);
+}
+
+
+/* 5. CONFIDENCE */
+.ai-card:nth-child(5){
+  border-left:3px solid #3b15ae;
+  background:rgba(168,85,247,0.08);
+}
+
+
+/* 7. SYSTEM STRESS */
+.ai-card:nth-child(7){
+  border-left:3px solid #16dfcb; 
+  background:rgba(239,68,68,0.08);
+}
+
+/* 9. LOAD STABILITY */
+.ai-card:nth-child(9){
+  border-left:3px solid #970769; 
+  background:rgba(34,197,94,0.08);
+}
+
+/* 8. THERMAL INDEX */
+.ai-card:nth-child(8){
+  border-left:3px solid #f97316;  
+  background:rgba(249,115,22,0.08);
+}
+
+
+
+#aiStressCard { border-left:3px solid #ef4444; }
+
+/* ===== ANIMATION ===== */
+@keyframes popIn{
+  from{
+    transform:scale(0.9);
+    opacity:0;
+  }
+  to{
+    transform:scale(1);
+    opacity:1;
+  }
+}

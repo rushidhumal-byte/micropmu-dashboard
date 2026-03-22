@@ -9,6 +9,29 @@
 
 <style>
 
+button{
+  
+  width: 44%;
+  height: 38px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  transition: 0.3s;
+ 
+}
+
+
+
+
 .setting-card label{
 display:block;
 font-size:13px;
@@ -53,9 +76,49 @@ margin-top:10px;
 
 <h1>⚙ System Control & Protection Configuration</h1>
 
-<div class="health-box">
-<h3>Industrial Configuration Console</h3>
-<p>Protection tuning, GPS sync, sampling control, remote access & secure admin management.</p>
+<!-- 🔥 ADVANCED STATUS STRIP -->
+<div class="health-box" style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:20px;
+background:linear-gradient(135deg,#0f172a,#020617);
+border-left:4px solid #38bdf8;
+padding:18px 25px;
+">
+
+<!-- LEFT SIDE -->
+<div>
+<h3 style="margin:0;font-weight:600;">
+⚙ Intelligent Configuration Console
+</h3>
+
+<p style="margin:5px 0 0 0;font-size:13px;opacity:0.8;">
+Protection Control • System Modes • Secure Access • Device Sync
+</p>
+</div>
+
+<!-- RIGHT SIDE STATUS -->
+<div style="display:flex;gap:25px;flex-wrap:wrap;font-size:13px;">
+
+<div>
+<span style="opacity:0.7;">System Mode</span><br>
+<b id="systemModeLabel">Simulation</b>
+</div>
+
+<div>
+<span style="opacity:0.7;">Access Mode</span><br>
+<b id="modeLabel">Admin Mode</b>
+</div>
+
+<div>
+<span style="opacity:0.7;">Devices</span><br>
+<b id="deviceCount">1</b>
+</div>
+
+</div>
+
 </div>
 
 <div class="settings-grid">
@@ -238,17 +301,22 @@ Auto detect works if ESP is on same network.
 <h4>💻 Dashboard Alarm</h4>
 
 <label>Alarm Mode</label>
+<div style="margin-top: 1%;"></div>
 <select id="dashBuzzerMode">
 <option value="auto">Auto Fault Alarm</option>
 <option value="manual">Manual Control</option>
 <option value="off">Disabled</option>
 </select>
 
+<div style="margin-top: 13%;"></div>
 <button class="btn-small" onclick="testBuzzer()">Test Dashboard Buzzer</button>
-
-<p style="font-size:12px;opacity:0.7;">
-Sound played from browser when fault detected.
-</p>
+<div style="margin-top: 13%;"></div>
+<label>Alarm Sensitivity</label>
+<select id="alarmSensitivity">
+<option value="low">Low</option>
+<option value="medium">Medium</option>
+<option value="high">High</option>
+</select>
 
 </div>
 
@@ -258,13 +326,16 @@ Sound played from browser when fault detected.
 <h4>⚡ Model Hardware Buzzer</h4>
 
 <label>Hardware Alarm</label>
+<div style="margin-top: 1%;"></div>
 <select id="modelBuzzerMode">
 <option value="auto">Auto Fault Alarm</option>
 <option value="manual">Manual Control</option>
 <option value="off">Disabled</option>
 </select>
 
+<div style="margin-top: 13%;"></div>
 <button class="btn-small" onclick="toggleModelBuzzer()">Test Model Buzzer</button>
+<div style="margin-top: 13%;"></div>
 <label>Alarm Sensitivity</label>
 <select id="alarmSensitivity">
 <option value="low">Low</option>
@@ -272,9 +343,6 @@ Sound played from browser when fault detected.
 <option value="high">High</option>
 </select>
 
-<p style="font-size:12px;opacity:0.7;">
-Controls ESP32 physical buzzer on the monitoring model.
-</p>
 
 </div>
 
@@ -287,7 +355,27 @@ Controls ESP32 physical buzzer on the monitoring model.
 <div class="setting-card">
 <h3>📱 Remote Access (QR & Link)</h3>
 <button onclick="generateLink()">Generate Link</button>
-<input type="text" id="shareLink" readonly>
+<div style="position:relative;margin-top:8px;max-width:196px;">
+
+  <input 
+    type="text" 
+    id="shareLink" 
+    readonly 
+    style="width:100%;padding:7px 30px 7px 10px;border-radius:6px;"
+  >
+
+  <span onclick="copyLink()" 
+    style="
+      position:absolute;
+      right:-28px;
+      top:50%;
+      transform:translateY(-50%);
+      cursor:pointer;
+    ">
+    📋
+  </span>
+
+</div>
 <button onclick="generateQR()">Generate QR</button>
 <label>Network Access Mode</label>
 <select id="networkMode">
@@ -297,11 +385,11 @@ Controls ESP32 physical buzzer on the monitoring model.
 </select>
 <button class="btn-danger" onclick="logoutAccess()">🚪 Logout Access</button>
 <p style="font-size:12px;opacity:0.7;">
-Controls how other devices access the Micro-PMU dashboard.
+
 </p>
 
 
-<div id="qrCode" style="margin-top:10px;"></div>
+<div id="qrCode" style="margin-top:2000px;"></div>
 </div>
 
 <!-- Storage -->
@@ -321,30 +409,75 @@ Controls how other devices access the Micro-PMU dashboard.
   Storage Used: <b id="memoryText">0%</b>
 </p>
 
-<button onclick="secureResetEnergy()">Reset Energy Counter</button>
-<button onclick="secureClearLogs()">Clear Browser Logs</button>
+<div style="
+  display:flex;
+  flex-direction:column;      /* 🔥 vertical */
+  align-items:center;       /* 👉 right side */
+  gap:10px;
+  margin-top:-4%;
+  padding-right:20px;
+">
+
+  <button onclick="secureResetEnergy()">Reset Energy Counter</button>
+  <button onclick="secureClearLogs()">Clear Browser Logs</button>
+
 </div>
 
+</div>
 <!-- Admin -->
 <div class="setting-card">
 <h3>🔐 Admin Security</h3>
+
 <div class="admin-box">
-<label>Password</label>
+
+
 <form onsubmit="return false;">
-  <input type="password" id="adminPass">
+
+  <div style="position:relative;margin-top:10px;max-width:186px;">
+
+    <input 
+      type="password" 
+      id="adminPass" 
+      placeholder="Enter admin password"
+      style="
+        width:100%;
+        padding:7px 35px 7px 10px;
+        border-radius:6px;
+      "
+    >
+
+    <span id="adminEye" onclick="toggleAdminPass()" 
+      style="
+        position:absolute;
+        right:-20px;
+        top:50%;
+        transform:translateY(-50%);
+        cursor:pointer;
+        font-size:16px;
+      ">
+      👁
+    </span>
+
+  </div>
+
 </form>
+
 <button onclick="verifyAdmin()">Verify</button>
+
 <p style="font-size:12px;opacity:0.7;">
 Password required once per tab session.
 </p>
+
 </div>
 </div>
 
-</div>
+<div class="save-box">
+<div style="margin-top:30px;text-align:center;"></div>
+  <button type="button" onclick="saveSettings()" class="save-btn">
+    💾 Save System Configuration
+  </button>
 
-<div style="margin-top:30px;text-align:center;">
-<button type="button" onclick="saveSettings()" class="save-btn">
-💾 Save System Configuration
+</div>
 
 </button>
 </div>

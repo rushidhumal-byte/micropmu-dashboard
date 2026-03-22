@@ -11,6 +11,26 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+
+button{
+  
+  width: 44%;
+  max-width: 200px;
+  height: 38px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  transition: 0.3s;
+}
+
 .report-controls{
 margin-bottom:25px;
 display:flex;
@@ -59,65 +79,135 @@ margin-bottom:25px;
 
 <!-- BILLING -->
 <div class="billing-box">
+
 <h3>💰 Smart Energy Billing Calculator</h3>
 
-<div class="billing-row">
-<label for="calcPower">Load (kW)</label>
-<input type="number" id="calcPower">
+<!-- ROW 1 -->
+<div class="billing-grid">
 
-<label>PF</label>
-<input type="number" id="calcPF" value="0.95" step="0.01">
+  <div class="field">
+    <label>Load (kW)</label>
+    <input type="number" id="calcPower">
+  </div>
 
-<label>Usage (Hours)</label>
-<input type="number" id="calcHours" value="6">
+  <div class="field">
+    <label>Usage (Hrs)</label>
+    <input type="number" id="calcHours">
+  </div>
+
+<div class="field">
+    <label>Phase</label>
+    <select id="supplyPhase">
+      <option value="1">Single Phase</option>
+      <option value="3">Three Phase</option>
+    </select>
+  </div>
+
 </div>
 
-<div class="billing-row">
-<label>Consumer</label>
-<select id="consumerType">
-  <option value="res">Residential</option>
-  <option value="com">Commercial</option>
-</select>
+<!-- ROW 2 -->
+<div class="billing-grid">
 
-<label>Phase</label>
-<select id="supplyPhase">
-  <option value="1">Single Phase</option>
-  <option value="3">Three Phase</option>
-</select>
+  <div class="field">
+    <label>Power Factor</label>
+    <input type="number" id="calcPF" value="0.95" step="0.01">
+  </div>
 
-<label>Supply</label>
-<select id="supplyType">
-  <option value="LT">LT</option>
-  <option value="HT">HT</option>
-</select>
+  <div class="field">
+    <label>Consumer</label>
+    <select id="consumerType">
+      <option value="res">Residential</option>
+      <option value="com">Commercial</option>
+    </select>
+  </div>
+
+   <div class="field">
+    <label>Electricity Duty (%)</label>
+    <input type="number" id="dutyInput">
+  </div>
+
+  
+
 </div>
 
-<div style="margin-top:15px;">
-<button onclick="calculateBill()">Calculate Bill</button>
-<button onclick="downloadBill()">Download Bill</button>
+<!-- ROW 3 -->
+<div class="billing-grid">
+
+  <div class="field">
+    <label>Supply Type</label>
+    <select id="supplyType">
+      <option value="LT">LT</option>
+      <option value="HT">HT</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Tariff (₹/kWh)</label>
+    <input type="number" id="tariff">
+  </div>
+
+  <div class="field">
+    <label>GST (%)</label>
+    <input type="number" id="gstInput" value="18">
+  </div>
+
+</div>
+
+<!-- ROW 4 -->
+<div class="billing-grid">
+
+ 
+
+</div>
+
+<!-- BUTTON -->
+<div style="margin-top:25px;">
+  <button onclick="calculateBill()">Calculate Bill</button>
 </div>
 
 <hr>
 
 <p>Total Units: <b id="unitResult">0 kWh</b></p>
-<p>Estimated Bill: <b id="billResult">₹0</b></p>
-<img src="msedcl-logo.png" class="logo">
+<p>Energy Charge: <b id="energyCharge">₹0</b></p>
+<p>GST: <b id="gstAmount">₹0</b></p>
+<p><b>Total Bill: ₹<span id="billResult">0</span></b></p>
+
+<button onclick="downloadBill()">Download Bill</button>
+
+<p id="billBreakdown"></p>
+
 </div>
 
-
 <!-- REPORT BUTTONS -->
+ <div style="margin-top:40px;"></div>
 <div class="report-controls">
 <button onclick="showDaily()">Daily Report</button>
 <button onclick="showWeekly()">Weekly Report</button>
 <button onclick="showMonthly()">Monthly Report</button>
+<button onclick="showMonthly()">RESET</button>
 </div>
 
 <!-- REPORT CHARTS -->
 <div class="charts">
 
 <div class="chart-box">
-<h3 id="reportTitle">Voltage vs Time</h3>
-<canvas id="reportVoltage"></canvas>
+  <h3 id="reportVoltageTitle">Voltage vs Time</h3>
+  <canvas id="reportVoltage"></canvas>
+</div>
+
+<div class="chart-box">
+  <h3 id="reportCurrentTitle">Current vs Time</h3>
+  <canvas id="reportCurrent"></canvas>
+</div>
+
+<div class="chart-box">
+  <h3 id="reportPowerTitle">Power vs Time</h3>
+  <canvas id="reportPower"></canvas>
+</div>
+
+<div class="chart-box">
+  <h3 id="reportPFTitle">Power Factor vs Time</h3>
+  <canvas id="reportPF"></canvas>
 </div>
 
 <div class="chart-box">
@@ -192,6 +282,7 @@ margin-bottom:25px;
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

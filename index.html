@@ -107,47 +107,72 @@ align-items:center;
 <!-- ================= DASHBOARD CARDS ================= -->
 <div class="cards">
 
-<div class="card blue">
-<h3>Grid Voltage</h3>
-<p id="v">0 V</p>
+  <div class="card blue">
+    <h3>Grid Voltage</h3>
+    <p id="v">0 V</p>
+  </div>
+
+  <div class="card green">
+    <h3>Load Current</h3>
+    <p id="c">0 A</p>
+  </div>
+
+  <div class="card orange">
+    <h3>Frequency</h3>
+    <p id="f">0 Hz</p>
+  </div>
+
+  <!-- ✅ FIXED STATUS CARD -->
+  <div class="card status normal" id="statusCard">
+    <h3>Status</h3>
+    <p id="statusText">SYSTEM HEALTHY</p>
+  </div>
+
+  <div class="card purple">
+    <h3>Power</h3>
+    <p id="p">0 W</p>
+  </div>
+
+  <div class="card cyan">
+    <h3>Power Factor</h3>
+    <p id="pfVal">0.00</p>
+  </div>
+
+  <div class="card red">
+    <h3>Temperature</h3>
+    <p id="temp">0 °C</p>
+  </div>
+
 </div>
 
-<div class="card green">
-<h3>Load Current</h3>
-<p id="c">0 A</p>
+<div class="fault-strip">
+
+  <div>
+  <span><span style="color:#facc15; display:inline;">⚠</span>&nbsp;Fault Time</span><br>
+  <b id="faultTimeNew">--</b>
 </div>
 
-<div class="card orange">
-<h3>Frequency</h3>
-<p id="f">0 Hz</p>
+<div>
+  <span><span style="color:#38bdf8; display:inline;">⏱</span>&nbsp;Duration</span><br>
+  <b id="faultDurationNew">0s 0ms</b>
 </div>
 
-<div class="card status normal" id="statusCard">
-<h3>Status</h3>
-<p id="statusText">SYSTEM HEALTHY</p>
+  <div>
+    <span>📍 Fault</span><br>
+    <b id="faultLocation">NORMAL</b>
+  </div>
 
-<!-- 🔥 ADDed INSIDE CARD -->
-<p id="faultTimeBox" style="font-size:12px;opacity:0.8;margin-top:5px;">
-Fault: <span id="faultTime">--</span>
-</p>
+  <div>
+    <span>⚡ Severity</span><br>
+    <b id="severityLevel">NORMAL</b>
+  </div>
 
-</div>
+   <div style="display:flex; gap:10px; align-items:center;">
 
+   <button onclick="openAI()" id="aiBtn">🧠 AI Analysis</button>
 
-<div class="card purple">
-<h3>Power</h3>
-<p id="p">0 W</p>
-</div>
+  </div>
 
-<div class="card cyan">
-<h3>Power Factor</h3>
-<p id="pfVal">0.00</p>
-</div>
-
-<div class="card red">
-<h3>Temperature</h3>
-<p id="temp">0 °C</p>
-</div>
 
 </div>
 
@@ -168,8 +193,6 @@ Fault: <span id="faultTime">--</span>
 
 </div>
 
-<!-- Load main.js at end -->
-<script src="js/main.js"></script>
 
 <!-- 🔐 ACCESS POPUP ADD HERE -->
 <div id="accessPopup" style="
@@ -224,5 +247,72 @@ Fault: <span id="faultTime">--</span>
   </div>
 </div>
 
+<div id="aiPopup" class="ai-overlay">
+
+  <div class="ai-box">
+
+    <div class="ai-header">
+      <span>🧠 AI Smart Analysis</span>
+      <button onclick="closeAI()">✖</button>
+    </div>
+
+    <div class="ai-content">
+
+      <div class="ai-card">
+        <label>Status</label>
+        <span id="aiStatus"></span>
+      </div>
+
+      <div class="ai-card">
+        <label>Reason</label>
+        <span id="aiReason"></span>
+      </div>
+
+      <div class="ai-card">
+        <label>Recommendation</label>
+        <span id="aiFix"></span>
+      </div>
+
+      <div class="ai-card">
+        <label>Prediction</label>
+        <span id="aiPrediction"></span>
+      </div>
+
+      <div class="ai-card">
+        <label>Risk Level</label>
+        <span id="aiRisk"></span>
+      </div>
+       
+
+      <div class="ai-card">
+        <label>Confidence</label>
+        <span id="aiConfidence"></span>
+      </div>
+
+
+      <div class="ai-card">
+  <label>System Stress</label>
+  <span id="aiStress"></span>
+</div>
+
+<div class="ai-card">
+  <label>Load Stability</label>
+  <span id="aiStability"></span>
+</div>
+
+<div class="ai-card">
+  <label>Thermal Index</label>
+  <span id="aiThermal"></span>
+</div>
+
+
+
+    </div>
+
+  </div>
+
+</div>
+
+<script src="js/main.js"></script>
 </body>
 </html>
