@@ -607,6 +607,13 @@ img{
   outline:none;
 }
 
+.qr-wrapper {
+  position: fixed;   /* screen pe lock */
+  right: 90px;
+  top: 550px;
+  z-index: 999;
+}
+
 #qrCode{
   width:180px;
   height:180px;
@@ -617,7 +624,7 @@ img{
 
   position: absolute;   /* 🔥 MAIN FIX */
   right: 90px;          /* adjust as needed */
-  top: 500px;           /* adjust to same position */
+  top: 650px;           /* adjust to same position */
 }
 .qr-card{
   position: relative;   /* 🔥 only this card affected */
@@ -894,17 +901,20 @@ img{
   }
 }
 
-
-/* ================= ONLY MOBILE FIX (SAFE) ================= */
+/* ================= MOBILE PERFECT FIX ================= */
 @media (max-width: 768px){
 
-  /* Sidebar top scroll */
+  /* Sidebar → top horizontal (safe) */
   .sidebar{
-    position: relative;
     width: 100%;
     height: auto;
     display: flex;
     overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .sidebar a{
+    flex: 0 0 auto;
   }
 
   /* Main full width */
@@ -914,27 +924,36 @@ img{
     padding: 10px;
   }
 
-  /* Grid → stack */
-  .settings-grid{
-    display: block !important;
+  /* 🔥 KEEP GRID SAME BUT AUTO FIT */
+  .cards{
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 
-  /* Cards spacing */
+  /* Charts stack */
+  .charts{
+    grid-template-columns: 1fr;
+  }
+
+  /* Settings grid FIX (NO BREAK) */
+  .settings-grid{
+    grid-template-columns: 1fr;   /* instead of block */
+  }
+
+  /* Card spacing */
   .setting-card{
-    width: 100% !important;
+    width: 100%;
     margin-bottom: 15px;
   }
 
-  /* Inputs fit screen */
+  /* Inputs safe */
   .setting-card input,
   .setting-card select{
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 100%;
   }
 
-  /* Buttons full width only on mobile */
+  /* Buttons responsive */
   button{
-    width: 100% !important;
+    width: 100%;
   }
 
   /* Prevent overflow */
@@ -946,26 +965,23 @@ img{
     overflow-x: hidden;
   }
 
-  /* Fix long content */
-  .health-box{
-    flex-direction: column !important;
-    align-items: flex-start !important;
+  /* Fault strip wrap fix */
+  .fault-strip{
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
-  /* QR spacing fix */
+  .fault-strip > div{
+    min-width: 45%;
+  }
+
+  /* QR fix */
   #qrCode{
-    margin-top: 20px !important;
+    position: static !important;
+    margin-top: 20px;
   }
 
 }
-
-@keyframes blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.3; }
-  100% { opacity: 1; }
-}
-
-
 /*********MSEDCL BILL****************/
 /***********************************/
 .bill {
