@@ -54,6 +54,10 @@ let faultHoldTime = 0;
 let faultTimer = 0;
 let faultCooldown = 0;
 let lastFaultEnd = 0;
+let accessMode = "";
+  let attemptsLeft = 3;
+  let energyCharge = 0;
+  let breakdown = [];
 
 // ===== ML HISTORY + DYNAMIC LIMITS =====
 let history = [];
@@ -71,6 +75,68 @@ let dynamicLimits = {
 let lastStatus = "SYSTEM HEALTHY";
 let faultStartTime = null;
 let activeFault = null;
+
+
+
+  window.showAccessPopup = function(mode) {
+
+    accessMode = mode;
+    attemptsLeft = 3;
+
+    const popup = document.getElementById("accessPopup");
+if (!popup) return;
+
+popup.style.display = "flex";
+    document.getElementById("accessPass").value = "";
+
+    document.getElementById("accessModeText").innerText =
+      mode === "mirror" ? "🔁 Sync Mode Access" : "☁ Cloud Mode Access";
+
+    document.getElementById("attemptInfo").innerText = "Attempts left: 3";
+
+    setTimeout(() => {
+      document.getElementById("accessPopup").style.opacity = "1";
+    }, 10);
+
+    setTimeout(() => {
+      document.getElementById("accessPass")?.focus();
+    }, 200);
+  }
+
+
+ window.submitAccess = function() {
+
+    const input = document.getElementById("accessPass").value;
+    const ACCESS_KEY = btoa("Rushii");
+
+    if (btoa(input) === ACCESS_KEY) {
+
+      if (accessMode === "mirror") {
+        sessionStorage.setItem("syncVerified", "true");
+      }
+      else if (accessMode === "remote") {
+        sessionStorage.setItem("cloudVerified", "true");
+      }
+
+      const popup = document.getElementById("accessPopup");
+      popup.style.display = "none";
+      popup.style.opacity = "0";
+
+      return;
+    }
+
+    attemptsLeft--;
+
+    if (attemptsLeft > 0) {
+      document.getElementById("attemptInfo").innerText =
+        "Attempts left: " + attemptsLeft;
+      alert("❌ Wrong Password");
+    }
+    else {
+      document.body.innerHTML =
+        "<h2 style='text-align:center;margin-top:100px'>⛔ Access Denied</h2>";
+    }
+  }
 
 function applyProtectionSettings() {
 
@@ -532,6 +598,8 @@ if(history.length > 30){
     }
   }
 
+
+  
   // ===== SEVERITY LEVEL (🔥 FIXED INSIDE FUNCTION) =====
   const el = document.getElementById("severityLevel");
 
@@ -655,34 +723,92 @@ if (strip) {
     }
    
   }
-   /************* AI BUTTON*******************/
+/************* AI BUTTON + INIT *******************/
+document.addEventListener("DOMContentLoaded", () => {
 
+  // ===== ACCESS CHECK =====
+  if (!checkDashboardAccess()) return;
+
+  // ===== CORE INIT =====
+  loadFirebaseSafe();
+  detectModeFromURL();
+  applyModeFromSettings();
+
+  if (typeof firebase !== "undefined") {
+    startFirebaseSync();
+  }
+
+  const settings = getSettings();
+
+  // ===== AI BUTTON =====
   const aiBtn = document.getElementById("aiBtn");
 
-if(aiBtn){
-  const status = evaluateStatus();   // 🔥 ADD THIS
-  if(status !== "SYSTEM HEALTHY"){
-    aiBtn.style.background = "#603272";
-  } else {
-    aiBtn.style.background = "#603272";
+  if (aiBtn) {
+    aiBtn.addEventListener("click", openAI);
+
+    const status = evaluateStatus();
+
+    // 🔥 Better color logic
+    if (status !== "SYSTEM HEALTHY") {
+      aiBtn.style.background = "#ef4444"; // red (fault)
+    } else {
+      aiBtn.style.background = "#22c55e"; // green (normal)
+    }
   }
-}
 
- 
-function updateAIRealtime(){
+  // ===== LOAD TYPE FIX =====
+  const loadTypeEl = document.getElementById("loadType");
 
-  const popup = document.getElementById("aiPopup");
+  if (loadTypeEl) {
+    loadTypeEl.addEventListener("change", function () {
 
-  // popup open nahi hai toh skip (performance save)
-  if(!popup || popup.style.display !== "flex") return;
+      const loadInput = document.getElementById("calcPower");
+      const pfInput = document.getElementById("calcPF");
+      const label = document.getElementById("loadLabel");
 
-  const ai = runAIEngine();
+      if (!loadInput || !pfInput || !label) return;
 
-  document.getElementById("aiStress").innerText = ai.stress + "%";
-  document.getElementById("aiThermal").innerText = ai.thermal + "%";
-  document.getElementById("aiStability").innerText = ai.stability.toFixed(2);
+      let load = parseFloat(loadInput.value);
+      let pf = parseFloat(pfInput.value);
 
-}
+      const newType = this.value;
+      const prevType = loadInput.getAttribute("data-type") || "W";
+
+      if (newType === "kVA") label.innerText = "Load (kVA)";
+      else if (newType === "W") label.innerText = "Load (W)";
+      else label.innerText = "Load (kW)";
+
+      if (!isNaN(load) && prevType !== newType) {
+
+        if (prevType === "W" && newType === "kW") load /= 1000;
+        else if (prevType === "kW" && newType === "W") load *= 1000;
+        else if (newType === "kVA" && !isNaN(pf) && pf !== 0) load /= pf;
+        else if (prevType === "kVA" && newType === "kW" && !isNaN(pf)) load *= pf;
+
+        loadInput.value = load.toFixed(2);
+      }
+
+      loadInput.setAttribute("data-type", newType);
+
+    });
+  }
+
+  // ===== GRAPH CONTROLS =====
+  const graphSelect = document.getElementById("graphPoints");
+  const refreshSelect = document.getElementById("autoRefresh");
+
+  if (graphSelect) {
+    graphSelect.addEventListener("change", startGraphEngine);
+  }
+
+  if (refreshSelect) {
+    refreshSelect.addEventListener("change", startGraphEngine);
+  }
+
+});
+
+ /************* AI BUTTON + INIT (FIXED) *******************/
+
 
   /********************END UPDATE**************************/
 
@@ -713,10 +839,7 @@ if(rateEl){
   }
 
   /* Start when page loads */
-  window.addEventListener("load", () => {
 
-    // ✅ start system
-    startSampling();
 
     // ✅ fault timer engine
     setInterval(() => {
@@ -744,7 +867,7 @@ if(rateEl){
 
     }, 100);
 
-  });
+
 
   /*********************************
    GRAPH ENGINE (GLOBAL SYNCED)
@@ -870,64 +993,112 @@ if(rateEl){
     );
   }
 
+
+
+ window.drawPhasor = function(){
+
+  const canvas = document.getElementById("phasorCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = 100;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // circle
+  ctx.strokeStyle = "#334155";
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // voltage reference (red)
+  ctx.strokeStyle = "#f62727";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + radius, cy);
+  ctx.stroke();
+
+  // current phasor (green)
+  const angle = phaseAngle * Math.PI / 180;
+
+  ctx.strokeStyle = "#26f50e";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + radius * Math.cos(angle), cy - radius * Math.sin(angle));
+  ctx.stroke();
+};
+
+  setInterval(updateWiFiStatus, 2000);
+
+
   /* ================= GLOBAL GRAPH UPDATE ================= */
 
   function startGraphEngine() {
 
-    if (graphTimer) clearInterval(graphTimer);
+  if (graphTimer) clearInterval(graphTimer);
 
-    graphTimer = setInterval(() => {
+  const settings = getSettings();
 
-      /* ===== Dashboard ===== */
-      if (dashboardCharts.voltage) {
-
-        pushData(dashboardCharts.voltage, voltage);
-        pushData(dashboardCharts.current, current);
-      }
-
-      /* ===== Live ===== */
-      if (liveCharts.liveVoltage) {
-
-        pushData(liveCharts.liveVoltage, voltage);
-        pushData(liveCharts.liveCurrent, current);
-        pushData(liveCharts.liveFrequency, frequency);
-        pushData(liveCharts.livePower, power);
-      }
-
-      /* ===== Performance ===== */
-      if (performanceCharts.phaseAngle) {
-
-        let loadKW = parseFloat((voltage * current * pf / 1000).toFixed(2));
-        let efficiency = Math.floor(pf * 100);
-        let freqStability = 100 - Math.abs(frequency - 50) * 8;
-        freqStability = Math.max(0, Math.min(100, freqStability));
-
-        if (document.getElementById("freqStability")) {
-          document.getElementById("freqStability").innerText = freqStability.toFixed(1) + " %";
-        }
-
-        pushData(performanceCharts.phaseAngle, phaseAngle);
-        pushData(performanceCharts.load, loadKW);
-        energy += loadKW / 3600;
-        pushData(performanceCharts.energy, energy);
-        pushData(performanceCharts.eff, efficiency);
-
-        // update performance numbers
-        updateSyncStatus();
-        if (document.getElementById("load")) {
-          document.getElementById("load").innerText = loadKW + " kW";
-        }
-        if (document.getElementById("energy")) {
-          document.getElementById("energy").innerText = energy.toFixed(3) + " kWh";
-        }
-        if (document.getElementById("efficiency")) {
-          document.getElementById("efficiency").innerText = efficiency + " %";
-        }
-      }
-      drawPhasor();
-    }, parseInt(getSettings().samplingRate) || 1000);
+  // 🔥 AUTO REFRESH OFF
+  if (settings.autoRefresh === "off") {
+    console.log("Graph Auto Refresh OFF");
+    return;
   }
 
+  graphTimer = setInterval(() => {
+
+    /* ===== Dashboard ===== */
+    if (dashboardCharts.voltage) {
+      pushData(dashboardCharts.voltage, voltage);
+      pushData(dashboardCharts.current, current);
+    }
+
+    /* ===== Live ===== */
+    if (liveCharts.liveVoltage) {
+      pushData(liveCharts.liveVoltage, voltage);
+      pushData(liveCharts.liveCurrent, current);
+      pushData(liveCharts.liveFrequency, frequency);
+      pushData(liveCharts.livePower, power);
+    }
+
+    /* ===== Performance ===== */
+    if (performanceCharts.phaseAngle) {
+
+      let loadKW = parseFloat((voltage * current * pf / 1000).toFixed(2));
+      let efficiency = Math.floor(pf * 100);
+
+      pushData(performanceCharts.phaseAngle, phaseAngle);
+      pushData(performanceCharts.load, loadKW);
+
+      energy += loadKW / 3600;
+      pushData(performanceCharts.energy, energy);
+
+      pushData(performanceCharts.eff, efficiency);
+
+      if (document.getElementById("load")) {
+        document.getElementById("load").innerText = loadKW + " kW";
+      }
+
+      if (document.getElementById("energy")) {
+        document.getElementById("energy").innerText = energy.toFixed(3) + " kWh";
+      }
+
+      if (document.getElementById("efficiency")) {
+        document.getElementById("efficiency").innerText = efficiency + " %";
+      }
+    }
+
+    drawPhasor();
+
+  }, parseInt(settings.samplingRate) || 1000);
+}
+
+    
   function resetGraphs() {
 
     Object.values(dashboardCharts).forEach(c => {
@@ -953,20 +1124,20 @@ if(rateEl){
   }
   /* ================= PUSH DATA SAFE ================= */
 
-  function pushData(chart, value) {
+  function pushData(chart, value){
 
-    const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
-    const maxPoints = parseInt(settings.graphPoints) || 20;
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+  const maxPoints = parseInt(settings.graphPoints) || 20;
 
-    if (chart.data.labels.length >= maxPoints) {
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
-    }
+  if(chart.data.labels.length >= maxPoints){
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
 
-    chart.data.labels.push("");
-    chart.data.datasets[0].data.push(value);
+  chart.data.labels.push("");
+  chart.data.datasets[0].data.push(value);
 
-    chart.update();
+  chart.update();
   }
 
   /*********************************
@@ -975,33 +1146,70 @@ if(rateEl){
 
   function startLogger() {
 
-    if (logTimer) clearInterval(logTimer);
+  if (logTimer) clearInterval(logTimer);
 
-    const settings = getSettings();
-    const interval = parseInt(settings.logInterval) || 1000;
+  const settings = getSettings();
+  const value = parseInt(settings.logValue) || 1;
+  const unit = settings.logUnit || "sec";
 
-    logTimer = setInterval(() => {
+  let interval = 1000;
 
-      let logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+  if(unit === "sec") interval = value * 1000;
+  else if(unit === "min") interval = value * 60000;
+  else if(unit === "hr") interval = value * 3600000;
 
-      logs.push({
-        timestamp: new Date().toISOString(),
-        voltage,
-        current,
-        frequency,
-        power,
-        pf,
-        phaseAngle,
-        temperature,
-        status: evaluateStatus()
-      });
+  logTimer = setInterval(() => {
 
-      if (logs.length > 5000) logs.shift();
+    let logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
 
+    logs.push({
+      timestamp: new Date().toISOString(),
+      voltage,
+      current,
+      frequency,
+      power,
+      pf,
+      phaseAngle,
+      temperature,
+      status: evaluateStatus()
+    });
+
+    // 🔥 LIMIT (SAFE)
+    if (logs.length > 5000) logs.shift();
+
+    // 🔥 SAVE OPTIMIZED
+    if (logs.length % 5 === 0) {
       localStorage.setItem("micropmu_logs", JSON.stringify(logs));
+    }
 
-    }, interval);
+  }, interval);
+}
+
+  function showStorageWarning(){
+
+  let popup = document.getElementById("storagePopup");
+
+  if(!popup){
+    popup = document.createElement("div");
+    popup.id = "storagePopup";
+
+    popup.style.position = "fixed";
+    popup.style.top = "20px";
+    popup.style.right = "20px";
+    popup.style.background = "#dc2626";
+    popup.style.color = "#fff";
+    popup.style.padding = "12px 18px";
+    popup.style.borderRadius = "10px";
+    popup.style.fontWeight = "600";
+    popup.style.zIndex = "9999";
+    popup.style.animation = "blink 1s infinite";
+
+    popup.innerText = "⚠ SYSTEM STORAGE GETTING FULL";
+
+    document.body.appendChild(popup);
   }
+}
+
   function loadSettings() {
 
     const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
@@ -1076,23 +1284,28 @@ if(rateEl){
    MEMORY USAGE MONITOR
   **********************************/
 
-  function updateMemoryUsage() {
+ function updateMemoryUsage() {
 
-    if (!document.getElementById("memoryBar")) return;
+  if (!document.getElementById("memoryBar")) return;
 
-    const logs = localStorage.getItem("micropmu_logs") || "";
-    const usedBytes = new Blob([logs]).size;
-    const maxBytes = 5 * 1024 * 1024;
+  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
 
-    let percent = ((usedBytes / maxBytes) * 100);
-    percent = Math.min(percent, 100); // limit
+  const jsonString = JSON.stringify(logs);
+  const usedBytes = new TextEncoder().encode(jsonString).length;
 
-    const bar = document.getElementById("memoryBar");
-    const text = document.getElementById("memoryText");
-    const container = bar.parentElement;
+  // ✅ FIX (order correct)
+  const maxBytes = 4.5 * 1024 * 1024;
 
-    bar.style.width = percent + "%";
-    text.innerText = percent.toFixed(1) + "%";
+  let percent = ((usedBytes / maxBytes) * 100);
+  percent = Math.min(percent, 100);
+
+  const bar = document.getElementById("memoryBar");
+  const text = document.getElementById("memoryText");
+  const container = bar.parentElement;
+
+  bar.style.width = percent + "%";
+  text.innerText = percent.toFixed(1) + "%";
+
 
     // ================= COLOR LOGIC =================
     if (percent < 25) {
@@ -1116,8 +1329,8 @@ if(rateEl){
     if (percent >= 95 && percent < 98) {
 
       if (!window._memWarned) {
-        alert("⚠ Storage Almost Full!");
-        playBuzzer();
+       showStorageWarning();
+       playBuzzer();
         window._memWarned = true;
       }
     }
@@ -1133,6 +1346,10 @@ if(rateEl){
 
       stopBuzzer();
       window._memWarned = false;
+
+      const popup = document.getElementById("storagePopup");
+      if(popup) popup.remove();
+
     }
 
   }
@@ -1146,6 +1363,7 @@ if(rateEl){
 
  function exportCSV(){
 
+  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
   const btn = event.target;
   btn.innerText = "⏳ Exporting...";
 
@@ -1273,96 +1491,159 @@ if(rateEl){
 
   if (document.getElementById("reportVoltage")) {
 
-    const ctxV = new Chart(document.getElementById("reportVoltage"), {
-      type: "line",
-      data: { labels: [], datasets: [{ label: "Voltage", data: [], borderColor: "#38bdf8" }] }
-    });
+  // ===== CHARTS INIT =====
+  const ctxV = new Chart(document.getElementById("reportVoltage"), { type:"line", data:{labels:[], datasets:[{label:"Voltage", data:[], borderColor:"#38bdf8"}]}});
+  const ctxC = new Chart(document.getElementById("reportCurrent"), { type:"line", data:{labels:[], datasets:[{label:"Current", data:[], borderColor:"#22c55e"}]}});
+  const ctxP = new Chart(document.getElementById("reportPower"), { type:"line", data:{labels:[], datasets:[{label:"Power", data:[], borderColor:"#f97316"}]}});
+  const ctxPF = new Chart(document.getElementById("reportPF"), { type:"line", data:{labels:[], datasets:[{label:"PF", data:[], borderColor:"#a855f7"}]}});
 
-    const ctxC = new Chart(document.getElementById("reportCurrent"), {
-      type: "line",
-      data: { labels: [], datasets: [{ label: "Current", data: [], borderColor: "#22c55e" }] }
-    });
+  // NEW
+  const ctxF = new Chart(document.getElementById("reportFrequency"), { type:"line", data:{labels:[], datasets:[{label:"Frequency", data:[], borderColor:"#06b6d4"}]}});
+  const ctxT = new Chart(document.getElementById("reportTemperature"), { type:"line", data:{labels:[], datasets:[{label:"Temperature", data:[], borderColor:"#ef4444"}]}});
+  const ctxE = new Chart(document.getElementById("reportEnergy"), { type:"line", data:{labels:[], datasets:[{label:"Energy", data:[], borderColor:"#eab308"}]}});
+  const ctxPH = new Chart(document.getElementById("reportPhase"), { type:"line", data:{labels:[], datasets:[{label:"Phase", data:[], borderColor:"#10b981"}]}});
 
-    const ctxP = new Chart(document.getElementById("reportPower"), {
-      type: "line",
-      data: { labels: [], datasets: [{ label: "Power", data: [], borderColor: "#f97316" }] }
-    });
+  const allCharts = [ctxV, ctxC, ctxP, ctxPF, ctxF, ctxT, ctxE, ctxPH];
 
-    const ctxPF = new Chart(document.getElementById("reportPF"), {
-      type: "line",
-      data: { labels: [], datasets: [{ label: "Power Factor", data: [], borderColor: "#a855f7" }] }
-    });
+  // =================================================
+  // 🔥 MAIN FUNCTION
+  // =================================================
+  function loadReportData(range){
 
-    function loadReportData(range) {
+    const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+    const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
 
-      const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
-
-      if (logs.length === 0) {
-        alert("No Data Available");
-        return;
-      }
-
-      // Clear old data
-      [ctxV, ctxC, ctxP, ctxPF].forEach(chart => {
-        chart.data.labels = [];
-        chart.data.datasets[0].data = [];
-      });
-
-      logs.forEach(log => {
-        ctxV.data.labels.push("");
-        ctxV.data.datasets[0].data.push(log.voltage);
-
-        ctxC.data.labels.push("");
-        ctxC.data.datasets[0].data.push(log.current);
-
-        ctxP.data.labels.push("");
-        ctxP.data.datasets[0].data.push(log.power);
-
-        ctxPF.data.labels.push("");
-        ctxPF.data.datasets[0].data.push(log.pf);
-      });
-
-      ctxV.update();
-      ctxC.update();
-      ctxP.update();
-      ctxPF.update();
-
-        document.getElementById("reportTitle").innerText =
-        "Voltage vs Time (" + range + ")";
-    
-
-        document.getElementById("reportTitle").innerText =
-        "Current vs Time (" + range + ")";
-    
-
-        document.getElementById("reportTitle").innerText =
-        "Power vs Time (" + range + ")";
-
-        document.getElementById("reportTitle").innerText =
-        "Power Factor vs Time (" + range + ")";
+    // ESP CHECK
+    if(settings.systemMode === "esp" && !window.espConnected){
+      alert("⚠ ESP Not Connected");
+      return;
     }
 
-    window.showDaily = function () {
-  setLoading("Daily");
-};
+    // CSV CHECK
+    if(settings.systemMode === "hybrid" && (!window.analysisDataset || window.analysisDataset.length === 0)){
+      alert("⚠ Upload CSV file first");
+      return;
+    }
 
-window.showWeekly = function () {
-  setLoading("Weekly");
-};
+    if(logs.length === 0){
+      alert("No Data Available");
+      return;
+    }
 
-window.showMonthly = function () {
-  setLoading("Monthly");
-};
+    const now = new Date();
+    let startTime = new Date();
 
-function setLoading(type){
-  document.getElementById("reportVoltageTitle").innerText = "Loading " + type + "...";
-  document.getElementById("reportCurrentTitle").innerText = "Loading " + type + "...";
-  document.getElementById("reportPowerTitle").innerText = "Loading " + type + "...";
-  document.getElementById("reportPFTitle").innerText = "Loading " + type + "...";
+    if(range === "Hourly") startTime.setHours(now.getHours() - 1);
+    else if(range === "Daily") startTime.setDate(now.getDate() - 1);
+    else if(range === "Weekly") startTime.setDate(now.getDate() - 7);
+    else if(range === "Monthly") startTime.setMonth(now.getMonth() - 1);
 
-  setTimeout(()=>loadReportData(type),300);
-}
+    const filtered = logs.filter(log => {
+      const t = new Date(log.timestamp);
+      return t >= startTime && t <= now;
+    });
+
+    if(filtered.length === 0){
+      alert("No Data in selected range");
+      return;
+    }
+
+    // CLEAR
+    allCharts.forEach(c=>{
+      c.data.labels = [];
+      c.data.datasets[0].data = [];
+    });
+
+    let energyCalc = 0;
+
+    // FILL DATA
+    filtered.forEach(log => {
+
+      const time = new Date(log.timestamp).toLocaleTimeString();
+
+      ctxV.data.labels.push(time);
+      ctxV.data.datasets[0].data.push(log.voltage || 0);
+
+      ctxC.data.labels.push(time);
+      ctxC.data.datasets[0].data.push(log.current || 0);
+
+      ctxP.data.labels.push(time);
+      ctxP.data.datasets[0].data.push(log.power || 0);
+
+      ctxPF.data.labels.push(time);
+      ctxPF.data.datasets[0].data.push(log.pf || 0);
+
+      // NEW FIX 🔥
+      ctxF.data.labels.push(time);
+      ctxF.data.datasets[0].data.push(log.frequency || 0);
+
+      ctxT.data.labels.push(time);
+      ctxT.data.datasets[0].data.push(log.temperature || 0);
+
+      energyCalc += (log.power || 0) / 3600;
+      ctxE.data.labels.push(time);
+      ctxE.data.datasets[0].data.push(energyCalc);
+
+      ctxPH.data.labels.push(time);
+      ctxPH.data.datasets[0].data.push(log.phaseAngle || 0);
+    });
+
+    // UPDATE
+    allCharts.forEach(c => c.update());
+
+    // TITLES
+    document.getElementById("reportVoltageTitle").innerText = "Voltage ("+range+")";
+    document.getElementById("reportCurrentTitle").innerText = "Current ("+range+")";
+    document.getElementById("reportPowerTitle").innerText = "Power ("+range+")";
+    document.getElementById("reportPFTitle").innerText = "PF ("+range+")";
+
+    document.getElementById("reportFrequencyTitle").innerText = "Frequency ("+range+")";
+    document.getElementById("reportTemperatureTitle").innerText = "Temperature ("+range+")";
+    document.getElementById("reportEnergyTitle").innerText = "Energy ("+range+")";
+    document.getElementById("reportPhaseTitle").innerText = "Phase Angle ("+range+")";
   }
+
+  // =================================================
+  // 🔥 BUTTONS FIX (MAIN ISSUE)
+  // =================================================
+  window.showHourly = function(){ setLoading("Hourly"); };
+  window.showDaily = function(){ setLoading("Daily"); };
+  window.showWeekly = function(){ setLoading("Weekly"); };
+  window.showMonthly = function(){ setLoading("Monthly"); };
+
+  function setLoading(type){
+
+    document.querySelectorAll("[id$='Title']").forEach(el=>{
+      el.innerText = "Loading " + type + "...";
+    });
+
+    setTimeout(()=>loadReportData(type), 300);
+  }
+
+  // =================================================
+  // 🔥 RESET
+  // =================================================
+  window.resetReports = function(){
+
+    allCharts.forEach(c=>{
+      c.data.labels = [];
+      c.data.datasets[0].data = [];
+      c.update();
+    });
+
+    document.querySelectorAll("[id$='Title']").forEach(el=>{
+      el.innerText = el.innerText.replace(/\(.*\)/,"").trim();
+    });
+
+    alert("✅ Reports Reset Successfully");
+  };
+
+  // RESIZE FIX
+  window.addEventListener("resize", ()=>{
+    allCharts.forEach(c=>c.resize());
+  });
+
+}
   /*********************************
    ESP LIVE MODE + WIFI ENGINE
   **********************************/
@@ -1561,26 +1842,6 @@ function setLoading(type){
 
   // ================= SAFE MODE SWITCH WRAPPER =================
 
-
-  /* ================= SETTINGS AUTO APPLY ================= */
-
-  document.addEventListener("DOMContentLoaded", () => {
-
-    applyModeFromSettings();
-    if (typeof firebase !== "undefined") {
-      startFirebaseSync();
-    }
-    if (typeof startSampling === "function") {
-      startSampling();
-    }
-    const settings = getSettings();
-
-    if (settings.systemMode === "esp") {
-    }
-  });
-
-
-
   /*********************************
    PART 5 - SAFE CLOUD + QR MODULE
   **********************************/
@@ -1629,7 +1890,7 @@ function setLoading(type){
       script1.onload = () => {
         script2.onload = () => {
           firebase.initializeApp(firebaseConfig);
-          initCloudSync();
+          
         };
         document.head.appendChild(script2);
       };
@@ -1729,42 +1990,6 @@ function setLoading(type){
      DASHBOARD ACCESS CONTROL (FINAL CLEAN)
   ===================================== */
 
-  window.isAdminDevice = false;
-
-  function checkDashboardAccess() {
-
-    const mode = localStorage.getItem("networkMode") || "local";
-
-    // ===== ADMIN MODE =====
-    if (mode === "local") {
-      return true;
-    }
-
-    // ===== SYNC MODE =====
-    if (mode === "mirror") {
-
-      if (sessionStorage.getItem("syncVerified") === "true") {
-        return true;
-      }
-
-      showAccessPopup("mirror");
-      return false;
-    }
-
-    // ===== CLOUD MODE =====
-    if (mode === "remote") {
-
-      if (sessionStorage.getItem("cloudVerified") === "true") {
-        return true;
-      }
-
-      showAccessPopup("remote");
-      return false;
-    }
-
-    return true;
-  }
-
   /* =====================================
      QR GENERATOR (OPTIMIZED + SAFE)
   ===================================== */
@@ -1818,35 +2043,42 @@ function setLoading(type){
       console.warn("QR module safe skip.");
     }
   }
-  /* ================= INIT SAFE ================= */
+  /* ================= INIT SAFE  MERGED ADDEVENTLISTNER================= */
+window.isAdminDevice = false;
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function checkDashboardAccess() {
 
-    if (!checkDashboardAccess()) return;
+    const mode = localStorage.getItem("networkMode") || "local";
 
-    loadFirebaseSafe();
-    detectModeFromURL(); 
-
-  });
-
-  /*********************************
-   SETTINGS + MODE 
-  *********************************/
-
-  // Load saved settings
-  document.addEventListener("DOMContentLoaded", () => {
-
-    let settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
-
-    if (settings.systemMode) {
-      const modeEl = document.getElementById("systemMode");
-      if (modeEl) {
-        modeEl.value = settings.systemMode;
-      }
+    // ===== ADMIN MODE =====
+    if (mode === "local") {
+      return true;
     }
 
-  });
+    // ===== SYNC MODE =====
+    if (mode === "mirror") {
 
+      if (sessionStorage.getItem("syncVerified") === "true") {
+        return true;
+      }
+
+      showAccessPopup("mirror");
+      return false;
+    }
+
+    // ===== CLOUD MODE =====
+    if (mode === "remote") {
+
+      if (sessionStorage.getItem("cloudVerified") === "true") {
+        return true;
+      }
+
+      showAccessPopup("remote");
+      return false;
+    }
+
+    return true;
+  }
 
   /*************************************************
    FINAL GLOBAL SETTINGS BUTTONS FIX
@@ -1879,7 +2111,7 @@ function setLoading(type){
     window.secureResetEnergy = function () {
 
       if (sessionStorage.getItem("adminVerified") !== "true") {
-        alert("Verify Admin First");
+        alert("⚠ Verify Admin First");
         return;
       }
 
@@ -1892,7 +2124,7 @@ function setLoading(type){
     window.secureClearLogs = function () {
 
       if (sessionStorage.getItem("adminVerified") !== "true") {
-        alert("Verify Admin First");
+        alert("⚠ Verify Admin First");
         return;
       }
 
@@ -2025,8 +2257,6 @@ window.generateQR = function(){
 };
   })();
 
-  // ========= START SAMPLING =========
-  startSampling();
 
   function getRandomFaultDuration() {
     return Math.floor(Math.random() * 3000) + 1000;
@@ -2359,333 +2589,500 @@ window.generateQR = function(){
 
   };
 
-  /*************************************************
-   PROFESSIONAL MSEDCL BILL CALCULATION (FINAL)
-  *************************************************/
-window.calculateBill = function () {
 
-  // ===== GET VALUES =====
-  const powerKW = parseFloat(document.getElementById("calcPower")?.value);
+
+//***************BILL CALCULATION ****************************//
+
+  window.calculateBill = function () {
+    breakdown = [];
+
+  let load = parseFloat(document.getElementById("calcPower")?.value);
   const pf = parseFloat(document.getElementById("calcPF")?.value);
   const hours = parseFloat(document.getElementById("calcHours")?.value);
 
   const tariffType = document.getElementById("consumerType")?.value || "res";
+  const tariff = parseFloat(document.getElementById("tariff")?.value);
+
+  const gstPercent = parseFloat(document.getElementById("gstInput")?.value) || 0;
+  const dutyPercent = parseFloat(document.getElementById("dutyInput")?.value) || 0;
+
   const supplyPhase = document.getElementById("supplyPhase")?.value || "1";
   const supplyType = document.getElementById("supplyType")?.value || "LT";
 
-  // 🔥 NEW (Dynamic Inputs)
-  const gstPercent = parseFloat(document.getElementById("gstInput")?.value);
-  const dutyPercent = parseFloat(document.getElementById("dutyInput")?.value);
+  const loadType = document.getElementById("loadType")?.value || "kW";
+  const fixedCharge = parseFloat(document.getElementById("fixedCharge")?.value) || 0;
 
-  // ===== VALIDATION =====
-  if(isNaN(powerKW) || isNaN(hours) || isNaN(pf)){
-    alert("⚠ Enter all required values");
-    return;
-  }
+  const mode = document.getElementById("billingMode")?.value || "daily";
 
-  if(powerKW <= 0 || hours <= 0){
-    alert("⚠ Enter valid load and usage hours");
-    return;
-  }
 
-  if(pf <= 0 || pf > 1){
-    alert("⚠ Power Factor must be between 0 and 1");
-    return;
-  }
+// ===== SMART VALIDATION =====
 
-  if(powerKW > 1000){
-    alert("⚠ Load value too high (check input)");
-    return;
-  }
+if(isNaN(load)){
+  alert("⚠ Please enter Load");
+  document.getElementById("calcPower").focus();
+  return;
+}
 
-  if(hours > 24){
-    alert("⚠ Usage hours cannot exceed 24 per day");
-    return;
-  }
+if(isNaN(hours)){
+  alert("⚠ Please enter Usage Hours");
+  document.getElementById("calcHours").focus();
+  return;
+}
 
-  // 🔥 VALIDATE GST / DUTY
-  if(isNaN(gstPercent) || gstPercent < 0 || gstPercent > 50){
-    alert("⚠ Enter valid GST (0–50%)");
-    return;
-  }
+if(loadType === "kVA" && isNaN(pf)){
+  alert("⚠ Please enter Power Factor");
+  document.getElementById("calcPF").focus();
+  return;
+}
 
-  if(isNaN(dutyPercent) || dutyPercent < 0 || dutyPercent > 50){
-    alert("⚠ Enter valid Electricity Duty (0–50%)");
-    return;
-  }
+if(load <= 0){
+  alert("⚠ Load must be greater than 0");
+  return;
+}
 
-  // ===== CALCULATION =====
-  const units = powerKW * hours * pf;
+if(hours <= 0){
+  alert("⚠ Hours must be greater than 0");
+  return;
+}
 
-  let breakdown = [];
-  let energyCharge = 0;
+if(loadType === "kVA" && (pf <= 0 || pf > 1)){
+  alert("⚠ Power Factor must be between 0–1");
+  return;
+}
 
-  function slabCalc(u, slabs) {
-    let remaining = u;
-    let total = 0;
+// 🔥 NEW: TARIFF VALIDATION (ONLY FOR CUSTOM MODE)
+if(tariffType !== "res" && isNaN(tariff)){
+  alert("⚠ Please enter Tariff (₹/kWh)");
+  document.getElementById("tariff").focus();
+  return;
+}
 
-    slabs.forEach(s => {
-      if (remaining > 0) {
-        const used = Math.min(remaining, s.limit);
-        const cost = used * s.rate;
+if(tariffType !== "res" && tariff <= 0){
+  alert("⚠ Tariff must be greater than 0");
+  return;
+}
 
-        breakdown.push(
-          `${used.toFixed(2)} Units × ₹${s.rate} = ₹${cost.toFixed(2)}`
-        );
 
-        total += cost;
-        remaining -= used;
-      }
-    });
+// 🔥 Auto fix if user entered big value (assume W)
+if(loadType === "kW" && load > 100){
+  load = load / 1000;
+}
 
-    return total;
-  }
+let units = 0;
+let loadKW = 0;
 
-  // ===== SLAB LOGIC =====
+// 🔥 Convert all inputs to kW (standard)
+if(loadType === "W"){
+  loadKW = load / 1000;
+}
+else if(loadType === "kVA"){
+  loadKW = load * pf;
+}
+else{
+  loadKW = load; // already kW
+}
+
+// 🔥 Smart safety (optional but useful)
+if(loadKW > 100){
+  console.warn("⚠ High load detected:", loadKW, "kW");
+}
+
+// 🔥 Units calculation
+if(mode === "daily"){
+  units = loadKW * hours;
+}
+else{
+  units = loadKW * hours * 30;
+}
+
+// 🔥 Round off
+units = Number(units.toFixed(2));
+
+// 🔥 Debug (remove later if needed)
+console.log("Load (kW):", loadKW);
+console.log("Units:", units);
+
+
   if (tariffType === "res") {
+
+    function slabCalc(u, slabs) {
+      let remaining = u;
+      let total = 0;
+
+      slabs.forEach(s => {
+        if (remaining > 0) {
+          const used = Math.min(remaining, s.limit);
+          const cost = used * s.rate;
+
+          breakdown.push(`${used.toFixed(0)} × ₹${s.rate} = ₹${cost.toFixed(2)}`);
+          total += cost;
+          remaining -= used;
+        }
+      });
+
+      return total;
+    }
+
     energyCharge = slabCalc(units, [
       { limit: 100, rate: 4.43 },
       { limit: 200, rate: 9.64 },
       { limit: 200, rate: 12.83 },
       { limit: Infinity, rate: 14.33 }
     ]);
+
   } else {
-    energyCharge = slabCalc(units, [
-      { limit: 100, rate: 5.88 },
-      { limit: 200, rate: 11.46 },
-      { limit: 200, rate: 15.72 },
-      { limit: Infinity, rate: 17.81 }
-    ]);
+
+    if(isNaN(tariff)){
+      alert("⚠ Enter Tariff");
+      return;
+    }
+
+    energyCharge = units * tariff;
+    breakdown.push(`${units.toFixed(0)} × ₹${tariff} = ₹${energyCharge.toFixed(2)}`);
   }
 
-  // ===== FIXED CHARGE =====
-  let fixedCharge = 0;
-
-  if (tariffType === "res") {
-    fixedCharge = (supplyPhase === "1")
-      ? (supplyType === "LT" ? 30 : 60)
-      : (supplyType === "LT" ? 100 : 155);
-  } else {
-    fixedCharge = (supplyPhase === "1")
-      ? (supplyType === "LT" ? 50 : 100)
-      : (supplyType === "LT" ? 120 : 200);
-  }
-
-  // ===== DYNAMIC TAXES =====
-  const gst = (energyCharge + fixedCharge) * (gstPercent / 100);
   const electricityDuty = energyCharge * (dutyPercent / 100);
+  const gst = (energyCharge + fixedCharge) * (gstPercent / 100);
 
-  const totalBill = energyCharge + fixedCharge + gst + electricityDuty;
+  const totalBill = energyCharge + fixedCharge + electricityDuty + gst;
 
-  // ===== OUTPUT =====
   document.getElementById("unitResult").innerText =
     units.toFixed(2) + " kWh";
 
   document.getElementById("billResult").innerText =
     "₹ " + totalBill.toFixed(2);
 
-  // 🔥 FULL BREAKDOWN
+    document.getElementById("energyResult").innerText =
+  "₹ " + energyCharge.toFixed(2);
+
+document.getElementById("gstResult").innerText =
+  "₹ " + gst.toFixed(2);
+
   const breakdownEl = document.getElementById("billBreakdown");
   if(breakdownEl){
     breakdownEl.innerText =
       `Energy: ₹${energyCharge.toFixed(2)} | Fixed: ₹${fixedCharge.toFixed(2)} | GST: ₹${gst.toFixed(2)} | Duty: ₹${electricityDuty.toFixed(2)}`;
   }
 
-  // ===== STORE DATA =====
   window._billData = {
     tariffType,
-    supplyPhase,
-    supplyType,
     units,
     energyCharge,
     fixedCharge,
     gst,
     electricityDuty,
     totalBill,
-    breakdown
+    breakdown,
+    supplyPhase,
+    supplyType,
+    loadType,
+    mode
   };
 
-};
-/************BILL AUTO UPDATE******************* */
+  
+  }
+// INITIAL TYPE
 
-document.getElementById("calcPower")?.addEventListener("input", calculateBill);
-document.getElementById("calcHours")?.addEventListener("input", calculateBill);
-document.getElementById("calcPF")?.addEventListener("input", calculateBill);
+//*********DOWNLOAD BILL********************** */
 
-  /*************************************************
-   MSEDCL PROFESSIONAL BILL DOWNLOAD (FINAL)
-  *************************************************/
 window.downloadBill = function () {
 
-  if (!window._billData) {
-    alert("Please calculate bill first.");
-    return;
+  const gstPercent = parseFloat(document.getElementById("gstInput")?.value) || 0;
+  const dutyPercent = parseFloat(document.getElementById("dutyInput")?.value) || 0;
+
+  if (!window._billData) { 
+    alert("⚠ Please calculate bill first"); 
+    return; 
   }
 
-  const d = window._billData;
-  const safe = (v) => Number(v || 0).toFixed(2);
+  const d = window._billData;   // 🔥 FIRST DEFINE THIS
 
-  const billNumber = "MS-" + Date.now();
-  const billingDate = new Date().toLocaleString();
+  const billNumber = "BILL-" + Date.now();
+  const billingDate = new Date().toLocaleDateString();
 
-  // 🔥 HTML BILL TEMPLATE
-  const billHTML = `
-  <html>
-  <head>
-    <title>MSEDCL Bill</title>
-    <style>
-      body{
-        font-family: Arial;
-        padding:20px;
-        background:#f5f5f5;
-      }
+  const consumerLabel = d.tariffType === "res" ? "Residential" : "Commercial";
+  const phaseLabel = d.supplyPhase === "3" ? "Three Phase" : "Single Phase";
 
-      .bill{
-        max-width:700px;
-        margin:auto;
-        background:white;
-        padding:20px;
-        border-radius:10px;
-        box-shadow:0 0 15px rgba(0,0,0,0.2);
-      }
+  function safe(val){
+    return val !== undefined ? Number(val).toFixed(2) : "0.00";
+  }
 
-      .header{
-        text-align:center;
-        border-bottom:2px solid #000;
-        padding-bottom:10px;
-      }
+  let suggestions = [];
 
-      .logo{
-        width:120px;
-        margin-bottom:10px;
-      }
+// ⚡ Consumption Analysis
+if(d.units > 1000){
+  suggestions.push("🚨 Extremely high consumption detected. Immediate load optimization required.");
+}
+else if(d.units > 500){
+  suggestions.push("⚠ High consumption. Reduce heavy appliances during peak hours.");
+}
+else if(d.units < 100){
+  suggestions.push("✅ Excellent efficiency. Very low consumption.");
+}
+else{
+  suggestions.push("ℹ Moderate usage. System operating in normal range.");
+}
 
-      .title{
-        font-weight:bold;
-        font-size:18px;
-      }
+// 💰 Bill Analysis
+if(d.totalBill > 10000){
+  suggestions.push("💸 High bill detected. Consider solar integration or load shifting.");
+}
+else if(d.totalBill < 2000){
+  suggestions.push("💡 Economical usage. Cost efficiency maintained.");
+}
 
-      .section{
-        margin-top:15px;
-        font-size:14px;
-      }
+// ⚙️ Power Factor Analysis
+if(d.loadType === "kVA"){
+  suggestions.push("⚡ kVA load detected. Maintain PF near unity to reduce losses.");
+}
 
-      .row{
-        display:flex;
-        justify-content:space-between;
-        margin:4px 0;
-      }
+// 🔌 Daily Usage Pattern
+const dailyUsage = d.units / 30;
+if(dailyUsage > 20){
+  suggestions.push("📊 High daily consumption pattern. Peak load monitoring recommended.");
+}
 
-      .total{
-        font-size:18px;
-        font-weight:bold;
-        color:#dc2626;
-        border-top:2px solid black;
-        margin-top:10px;
-        padding-top:10px;
-      }
+// 🧠 Advanced Intelligence
+const costPerUnit = d.units > 0 ? d.totalBill / d.units : 0;
 
-      .green{ color:#16a34a; }
-      .blue{ color:#2563eb; }
-    </style>
-  </head>
+suggestions.push("📈 Avg Daily Usage: " + dailyUsage.toFixed(1) + " kWh/day");
+suggestions.push("💲 Cost per Unit: ₹" + costPerUnit.toFixed(2));
 
-  <body>
+if(costPerUnit > 10){
+  suggestions.push("⚠ High cost per unit. Check tariff or load type.");
+}
 
-    <div class="bill">
+if(d.units < 300){
+  suggestions.push("🟢 Efficiency Score: HIGH");
+}
+else if(d.units < 800){
+  suggestions.push("🟡 Efficiency Score: MODERATE");
+}
+else{
+  suggestions.push("🔴 Efficiency Score: LOW");
+}
 
-      <div class="header">
-  <img src="./assets/msedcl-logo.png" class="logo">
-  <div class="title">Maharashtra State Electricity Distribution Co. Ltd.</div>
-  <div>ELECTRICITY BILL</div>
+// 🧠 Final Insight
+suggestions.push("🤖 AI Insight: System analyzed with load, cost, and efficiency parameters.");
+
+const html = `
+<html>
+<head>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#fff;
+  color:#000;
+  padding:20px;
+}
+
+.bill{
+  max-width:800px;
+  margin:auto;
+  border:2px solid #000;
+  padding:20px;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.logo{
+  width:70px;
+}
+
+.center{
+  text-align:center;
+  flex:1;
+}
+
+.title{
+  font-weight:bold;
+  font-size:14px;
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+.table td{
+  border:1px solid #000;
+  padding:6px;
+  font-size:13px;
+}
+
+.section-title{
+  margin-top:12px;
+  font-weight:bold;
+  border-bottom:1px solid #000;
+}
+
+.total{
+  font-weight:bold;
+  font-size:15px;
+}
+
+.ai-box{
+  background:#f0f8ff;
+  padding:10px;
+  border-left:4px solid #2196f3;
+  margin-top:10px;
+  font-size:13px;
+}
+
+.sign{
+  margin-top:30px;
+  text-align:right;
+  font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="bill">
+
+<!-- HEADER -->
+<div class="header">
+<img src="Assest/msedcl_logo.png" class="logo">
+
+  <div class="center">
+    <div class="title">
+      MAHARASHTRA STATE ELECTRICITY DISTRIBUTION CO. LTD.<br>
+      (MSEDCL)<br>
+      ELECTRICITY BILL - 2026
+    </div>
+  </div>
+
+  <div style="width:70px;"></div>
 </div>
 
-      <div class="section">
-        <div class="row"><span>Bill No:</span><span>${billNumber}</span></div>
-        <div class="row"><span>Date:</span><span>${billingDate}</span></div>
-        <div class="row"><span>Consumer:</span><span>${d.tariffType}</span></div>
-      </div>
+<!-- CONSUMER DETAILS -->
+<table class="table">
+<tr>
+<td>Bill Number</td><td>${billNumber}</td>
+<td>Billing Date</td><td>${billingDate}</td>
+</tr>
 
-      <div class="section">
-        <div class="row"><span>Units:</span><span>${safe(d.units)} kWh</span></div>
-        <div class="row"><span>Energy Charge:</span><span class="blue">₹${safe(d.energyCharge)}</span></div>
-        <div class="row"><span>Fixed Charge:</span><span>₹${safe(d.fixedCharge)}</span></div>
-        <div class="row"><span>GST:</span><span>₹${safe(d.gst)}</span></div>
-        <div class="row"><span>Duty:</span><span>₹${safe(d.electricityDuty)}</span></div>
-      </div>
+<tr>
+<td>Consumer No</td><td>CN-${Math.floor(Math.random()*999999)}</td>
+<td>Meter No</td><td>MT-${Math.floor(Math.random()*999999)}</td>
+</tr>
 
-      <div class="section total">
-        Total Bill: ₹${safe(d.totalBill)}
-      </div>
+<tr>
+<td>Consumer Type</td><td>${consumerLabel}</td>
+<td>Supply Phase</td><td>${phaseLabel}</td>
+</tr>
 
-      <div class="section green">
-        ✔ Generated by Micro-PMU Smart Billing System
-      </div>
+<tr>
+<td>Supply Type</td><td>${d.supplyType || "LT"}</td>
+<td>Units Consumed</td><td>${safe(d.units)} kWh</td>
+</tr>
 
-    </div>
+<tr>
+<td>Tariff</td><td>₹${safe(d.tariff)}</td>
+<td>Power Factor</td><td>${d.pf || 0.95}</td>
+</tr>
 
-  </body>
-  </html>
-  `;
+<tr>
+<td>Load Type</td><td>${d.loadType}</td>
+<td>Billing Mode</td><td>${d.mode}</td>
+</tr>
+</table>
 
- const opt = {
-  margin: 0.5,
-  filename: 'MSEDCL_Bill.pdf',
-  image: { type: 'jpeg', quality: 1 },
-  html2canvas: { scale: 2 },
-  jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-};
+<!-- BREAKDOWN -->
+<div class="section-title">ENERGY CHARGE BREAKDOWN</div>
 
-html2pdf().set(opt).from(billHTML).save();
-};
+<table class="table">
+<tr><td><b>Slab</b></td><td><b>Calculation</b></td><td><b>Amount</b></td></tr>
 
+${d.breakdown.map((b,i)=>`
+<tr>
+<td>${i+1}</td>
+<td>${b}</td>
+<td>₹${(b.split("₹")[1] || "0")}</td>
+</tr>
+`).join("")}
+
+</table>
+
+<!-- CHARGES -->
+<div class="section-title">BILL DETAILS</div>
+
+<table class="table">
+<tr><td>Energy Charge</td><td>₹${safe(d.energyCharge)}</td></tr>
+<tr><td>Fixed Charge</td><td>₹${safe(d.fixedCharge)}</td></tr>
+<tr><td>GST (${gstPercent}%)</td><td>₹${safe(d.gst)}</td></tr>
+<tr><td>Electricity Duty (${dutyPercent}%)</td><td>₹${safe(d.electricityDuty)}</td></tr>
+
+<tr class="total">
+<td>TOTAL AMOUNT</td>
+<td>₹${safe(d.totalBill)}</td>
+</tr>
+</table>
+
+<!-- AI -->
+<div class="bill-ai-box">
+<b>AI Analysis:</b><br>
+${suggestions.map(s => `• ${s}`).join("<br>")}
+
+<br><br>
+<b>Advanced Insights:</b><br>
+• Estimated Daily Usage: ${(d.units/30).toFixed(1)} kWh/day<br>
+• Cost per Unit: ₹${d.units ? (d.totalBill/d.units).toFixed(2) : "0.00"}
+• Efficiency Score: ${d.units < 300 ? "High" : d.units < 800 ? "Moderate" : "Low"}<br>
+• Load Behavior: ${d.units > 500 ? "Heavy Load Pattern" : "Normal Usage"}
+</div>
+
+
+<!-- INSTRUCTIONS -->
+<div class="instructions">
+  <b>Instructions:</b><br>
+  • Pay bill before due date to avoid penalty<br>
+  • Late payment may attract additional charges<br>
+  • Maintain proper power factor to reduce losses<br>
+  • Avoid heavy load during peak hours<br>
+  • Use energy efficient appliances (LED, inverter AC, etc.)<br>
+</div>
+
+<!-- SIGNATURE -->
+<div class="sign">
+Authorized Signatory<br>
+MSEDCL Billing Department
+</div>
+
+</div>
+
+</body>
+</html>
+`;
+
+  const element = document.createElement("div");
+  element.innerHTML = html;
+
+document.body.appendChild(element);
+
+html2pdf()
+  .set({
+    margin: 10,
+    filename: "MSEDCL_Bill.pdf",
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  })
+  .from(element)
+  .save()
+  .finally(() => {
+    // ✅ ALWAYS REMOVE (even if error happens)
+    document.body.removeChild(element);
+  });
+
+}
   /*********************************
-   PHASOR DIAGRAM
-  *********************************/
-
-  function drawPhasor() {
-
-    const canvas = document.getElementById("phasorCanvas");
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const radius = 100;
-
-    ctx.clearRect(0, 0, w, h);
-
-    ctx.strokeStyle = "#334155";
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // voltage reference
-    ctx.strokeStyle = "#f62727";
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + radius, cy);
-    ctx.stroke();
-
-    // current phasor
-    const angle = phaseAngle * Math.PI / 180;
-
-    ctx.strokeStyle = "#26f50e";
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + radius * Math.cos(angle), cy - radius * Math.sin(angle));
-    ctx.stroke();
-
-  }
-
-  setInterval(updateWiFiStatus, 2000);
-  window.addEventListener("load", updateSystemModeUI);
-
-  /*********************************
-   EXPORT SECTION AND UPLOAD PDF SECTION
+   //EXPORT SECTION AND UPLOAD PDF SECTION
   *********************************/
   function exportPDF(){
 
@@ -2708,6 +3105,7 @@ html2pdf().set(opt).from(billHTML).save();
       30 + (i*6)
     );
   });
+
 
   doc.save("MicroPMU_Report.pdf");
 }
@@ -2831,7 +3229,7 @@ html2pdf().set(opt).from(billHTML).save();
   // Reset Energy
   window.secureResetEnergy = function () {
     if (sessionStorage.getItem("adminVerified") !== "true") {
-      alert("Verify Admin First");
+      alert("⚠ Verify Admin First");
       return;
     }
     localStorage.removeItem("micropmu_energy");
@@ -2841,7 +3239,7 @@ html2pdf().set(opt).from(billHTML).save();
   // Clear Logs
   window.secureClearLogs = function () {
     if (sessionStorage.getItem("adminVerified") !== "true") {
-      alert("Verify Admin First");
+      alert("⚠ Verify Admin First");
       return;
     }
     localStorage.removeItem("micropmu_logs");
@@ -2866,83 +3264,22 @@ html2pdf().set(opt).from(billHTML).save();
   /* New Code Merging 
   /****************************************** */
 
-  let accessMode = "";
-  let attemptsLeft = 3;
-
-  function showAccessPopup(mode) {
-
-    accessMode = mode;
-    attemptsLeft = 3;
-
-    document.getElementById("accessPopup").style.display = "flex";
-    document.getElementById("accessPass").value = "";
-
-    document.getElementById("accessModeText").innerText =
-      mode === "mirror" ? "🔁 Sync Mode Access" : "☁ Cloud Mode Access";
-
-    document.getElementById("attemptInfo").innerText = "Attempts left: 3";
-
-    setTimeout(() => {
-      document.getElementById("accessPopup").style.opacity = "1";
-    }, 10);
-
-    setTimeout(() => {
-      document.getElementById("accessPass")?.focus();
-    }, 200);
-  }
-
-  function submitAccess() {
-
-    const input = document.getElementById("accessPass").value;
-    const ACCESS_KEY = btoa("Rushii");
-
-    if (btoa(input) === ACCESS_KEY) {
-
-      if (accessMode === "mirror") {
-        sessionStorage.setItem("syncVerified", "true");
-      }
-      else if (accessMode === "remote") {
-        sessionStorage.setItem("cloudVerified", "true");
-      }
-
-      const popup = document.getElementById("accessPopup");
-      popup.style.opacity = "0";
-
-      setTimeout(() => {
-        popup.style.display = "none";
-        location.reload();
-      }, 300);
-
-      return;
-    }
-
-    attemptsLeft--;
-
-    if (attemptsLeft > 0) {
-      document.getElementById("attemptInfo").innerText =
-        "Attempts left: " + attemptsLeft;
-      alert("❌ Wrong Password");
-    }
-    else {
-      document.body.innerHTML =
-        "<h2 style='text-align:center;margin-top:100px'>⛔ Access Denied</h2>";
-    }
-  }
-
   /***********FOR WINDOW******************* */
+window.togglePass = function() {
 
-  function togglePass() {
-    const input = document.getElementById("accessPass");
-    const icon = document.getElementById("eyeIcon");
+  const input = document.getElementById("accessPass");
+  const icon = document.getElementById("eyeIcon");
 
-    if (input.type === "password") {
-      input.type = "text";
-      if (icon) icon.innerText = "🙈";
-    } else {
-      input.type = "password";
-      if (icon) icon.innerText = "👁";
-    }
+  if (!input) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+    if (icon) icon.innerText = "🙈";
+  } else {
+    input.type = "password";
+    if (icon) icon.innerText = "👁";
   }
+};
 
   window.logoutAccess = function () {
 
@@ -3032,13 +3369,13 @@ function updateDynamicLimits(){
 
 /**************** AI SYSTEM ***********************/
 
-function runAIEngine(){
+window.runAIEngine = function(){
 
   updateDynamicLimits();
 
-const stress = systemStress();
-const thermal = thermalStress();
-const stability = loadStability();
+  const stress = systemStress();
+  const thermal = thermalStress();
+  const stability = loadStability();
 
   const status = evaluateStatus();
 
@@ -3048,12 +3385,12 @@ const stability = loadStability();
   let fix = "";
   let confidence = 0;  
 
-  // ===== MAIN LOGIC =====
   if(status === "SYSTEM HEALTHY"){
     reason = "All parameters normal";
     risk = 10;
     prediction = "Stable";
     fix = "No action";
+    confidence = 95;
   }
 
   else if(status === "LOW VOLTAGE"){
@@ -3061,6 +3398,7 @@ const stability = loadStability();
     risk = 60;
     prediction = "Current may increase";
     fix = "Reduce load";
+    confidence = 92;
   }
 
   else if(status === "OVER VOLTAGE"){
@@ -3068,6 +3406,7 @@ const stability = loadStability();
     risk = 65;
     prediction = "Equipment stress";
     fix = "Check source";
+    confidence = 93;
   }
 
   else if(status === "OVERLOAD"){
@@ -3075,6 +3414,7 @@ const stability = loadStability();
     risk = 80;
     prediction = "Temp will rise";
     fix = "Disconnect load";
+    confidence = 94;
   }
 
   else if(status === "LOW POWER FACTOR"){
@@ -3082,6 +3422,7 @@ const stability = loadStability();
     risk = 55;
     prediction = "Losses increase";
     fix = "Add capacitor";
+    confidence = 88;
   }
 
   else if(status === "SHORT CIRCUIT"){
@@ -3089,38 +3430,11 @@ const stability = loadStability();
     risk = 99;
     prediction = "Immediate failure";
     fix = "Trip supply";
-  }
-   
-const statusCard = document.querySelector(".ai-card"); // cleaner
-
-if(statusCard){
-
-  if(status === "SYSTEM HEALTHY"){
-    statusCard.style.borderLeft = "3px solid #22c55e";
-  }
-  else if(status === "OVERLOAD" || status === "SHORT CIRCUIT"){
-    statusCard.style.borderLeft = "3px solid #ef4444";
-  }
-  else{
-    statusCard.style.borderLeft = "3px solid #f97316";
+    confidence = 99;
   }
 
-}
-
-  // ===== SMART CONFIDENCE =====
-  if(status === "SYSTEM HEALTHY") confidence = 95;
-  else if(status === "LOW VOLTAGE") confidence = 92;
-  else if(status === "OVER VOLTAGE") confidence = 93;
-  else if(status === "HIGH CURRENT") confidence = 90;
-  else if(status === "OVERLOAD") confidence = 94;
-  else if(status === "LOW POWER FACTOR") confidence = 88;
-  else if(status === "FREQUENCY FAULT") confidence = 91;
-  else if(status === "SHORT CIRCUIT") confidence = 99;
-
-  // 🔥 realistic variation
   confidence = (confidence + Math.random()*3).toFixed(1) + "%";
 
-  // ===== FINAL RETURN (END ME HOGA) =====
   return {
     status,
     reason,
@@ -3128,31 +3442,75 @@ if(statusCard){
     prediction,
     fix,
     confidence,
-     stress,
-     thermal,
-     stability
-
+    stress,
+    thermal,
+    stability
   };
+};
 
+/**************** AI POPUP FINAL FIX ****************/
+
+// ✅ SAFE TEXT SETTER
+function setAI(id, value){
+  const el = document.getElementById(id);
+  if(el) el.innerText = value;
 }
+
+// ✅ OPEN AI POPUP (MAIN)
 window.openAI = function(){
+
+  const popup = document.getElementById("aiPopup");
+  if(!popup) return;
 
   const ai = runAIEngine();
 
-  document.getElementById("aiStatus").innerText = ai.status;
-  document.getElementById("aiReason").innerText = ai.reason;
-  document.getElementById("aiRisk").innerText = ai.risk;
-  document.getElementById("aiPrediction").innerText = ai.prediction;
-  document.getElementById("aiFix").innerText = ai.fix;
-  document.getElementById("aiConfidence").innerText = ai.confidence;
-  document.getElementById("aiStress").innerText = ai.stress + "%";
-document.getElementById("aiThermal").innerText = ai.thermal + "%";
-document.getElementById("aiStability").innerText = ai.stability;
+  setAI("aiStress", ai.stress + "%");
+  setAI("aiThermal", ai.thermal + "%");
+  setAI("aiStability", ai.stability);
 
-  document.getElementById("aiPopup").style.display = "flex";
-}
+  setAI("aiStatus", ai.status);
+  setAI("aiReason", ai.reason);
+  setAI("aiRisk", ai.risk);
+  setAI("aiPrediction", ai.prediction);
+  setAI("aiFix", ai.fix);
+  setAI("aiConfidence", ai.confidence);
+
+  // 🔥 MAIN FIX
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+
+  setTimeout(()=>{
+    popup.style.opacity = "1";
+  },10);
+};
 
 window.closeAI = function(){
-  document.getElementById("aiPopup").style.display = "none";
+  const popup = document.getElementById("aiPopup");
+  if(!popup) return;
+
+  popup.style.opacity = "0";
+
+  setTimeout(()=>{
+    popup.style.display = "none";
+  },200);
+};
+
+// ✅ REALTIME UPDATE (popup open ho tab hi)
+function updateAIRealtime(){function updateAIRealtime(){
+  return; // 🔒 disable realtime
 }
+
+  const popup = document.getElementById("aiPopup");
+  if(!popup || popup.style.display !== "flex") return;
+
+  const ai = runAIEngine();
+
+  setAI("aiStress", ai.stress + "%");
+  setAI("aiThermal", ai.thermal + "%");
+  setAI("aiStability", ai.stability);
+}
+
+// 🔥 AUTO UPDATE EVERY 1s
+//setInterval(updateAIRealtime, 1000);
 

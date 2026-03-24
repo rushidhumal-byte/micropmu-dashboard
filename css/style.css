@@ -749,6 +749,7 @@ img{
   backdrop-filter:blur(6px);
   align-items:center;
   justify-content:center;
+
   z-index:9999;
 }
 
@@ -891,4 +892,151 @@ img{
     transform:scale(1);
     opacity:1;
   }
+}
+
+
+/* ================= ONLY MOBILE FIX (SAFE) ================= */
+@media (max-width: 768px){
+
+  /* Sidebar top scroll */
+  .sidebar{
+    position: relative;
+    width: 100%;
+    height: auto;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  /* Main full width */
+  .main{
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 10px;
+  }
+
+  /* Grid → stack */
+  .settings-grid{
+    display: block !important;
+  }
+
+  /* Cards spacing */
+  .setting-card{
+    width: 100% !important;
+    margin-bottom: 15px;
+  }
+
+  /* Inputs fit screen */
+  .setting-card input,
+  .setting-card select{
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Buttons full width only on mobile */
+  button{
+    width: 100% !important;
+  }
+
+  /* Prevent overflow */
+  *{
+    box-sizing: border-box;
+  }
+
+  body{
+    overflow-x: hidden;
+  }
+
+  /* Fix long content */
+  .health-box{
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* QR spacing fix */
+  #qrCode{
+    margin-top: 20px !important;
+  }
+
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+
+/*********MSEDCL BILL****************/
+/***********************************/
+.bill {
+  max-width: 700px;
+  margin: auto;
+  background: #fff;
+  padding: 25px;
+  border: 2px solid #000;
+  box-sizing: border-box;
+
+  page-break-inside: avoid;   /* 🔥 VERY IMPORTANT */
+  break-inside: avoid;        /* 🔥 modern fix */
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.row span:last-child {
+  text-align: right;
+  max-width: 50%;
+}
+
+.bill-ai-box {
+  background: #eef6ff;              /* 🔵 soft blue */
+  padding: 12px;
+  border-left: 5px solid #2196f3;
+  margin-top: 15px;
+  font-size: 13px;
+
+  width: 100%;                      /* full width */
+  max-height: 180px;                /* 🔥 height control */
+  overflow-y: auto;                 /* scroll if large */
+
+  border-radius: 8px;
+  box-sizing: border-box;
+
+  page-break-inside: avoid;         /* 🔥 PDF fix */
+  break-inside: avoid;
+}
+.ai-box b {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.ai-box br {
+  line-height: 1.6;
+}
+
+.instructions {
+  margin-top: 15px;
+  font-size: 12px;
+
+  page-break-inside: avoid;   /* 🔥 cut nahi hoga */
+  break-inside: avoid;
+}
+
+.logo{
+  width:70px;
+  height:auto;
+}
+
+.sign {
+  margin-top: 25px;
+  text-align: right;
+  font-size: 12px;
+
+  page-break-inside: avoid;   /* 🔥 MAIN FIX */
+  break-inside: avoid;
 }

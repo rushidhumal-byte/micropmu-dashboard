@@ -265,7 +265,7 @@ Auto detect works if ESP is on same network.
     </select>
   </div>
   
-  <button class="reset-btn" onclick="resetGraphs()">🔄Reset Graph History</button> <button onclick="clearFaultHistory()">
+  <button onclick="resetReports()">📊 Reset Reports</button> <button onclick="clearFaultHistory()">
 🧹 Clear Fault History
 </button>
 
@@ -367,7 +367,7 @@ Auto detect works if ESP is on same network.
   <span onclick="copyLink()" 
     style="
       position:absolute;
-      right:-28px;
+      right:-36px;
       top:50%;
       transform:translateY(-50%);
       cursor:pointer;
@@ -449,7 +449,7 @@ Auto detect works if ESP is on same network.
     <span id="adminEye" onclick="toggleAdminPass()" 
       style="
         position:absolute;
-        right:-20px;
+        right:-32px;
         top:50%;
         transform:translateY(-50%);
         cursor:pointer;
@@ -538,6 +538,13 @@ Password required once per tab session.
   </div>
 </div>
 
+<!-- 1. Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- 2. html2pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- 3. MAIN JS LAST -->
 <script src="js/main.js"></script>
 </body>
 </html>
