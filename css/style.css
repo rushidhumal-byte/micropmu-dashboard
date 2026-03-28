@@ -12,37 +12,6 @@ body{
 }
 
 /* =====================================
-   SIDEBAR
-===================================== */
-.sidebar{
-  width:220px;
-  background:#020024;
-  min-height:100vh;
-  padding:20px;
-  flex-shrink:0;
-}
-
-.sidebar h2{
-  color:#38bdf8;
-  text-align:center;
-  margin-bottom:20px;
-}
-
-.sidebar a{
-  display:block;
-  color:white;
-  padding:12px;
-  text-decoration:none;
-  border-radius:6px;
-  margin-bottom:8px;
-  transition:0.3s;
-}
-
-.sidebar a:hover{
-  background:#2563eb;
-}
-
-/* =====================================
    MAIN AREA
 ===================================== */
 .main{
@@ -75,14 +44,17 @@ h1{
   gap:15px;
   margin-bottom:20px;
 }
-.card{
+
+body:not(.energy-page) .card{
   height:95px;
+  /* 🔥 FORCE APPLY */
   padding:14px;
   border-radius:12px;
   text-align:center;
   font-size:14px;
   box-shadow:0 4px 15px rgba(0,0,0,0.6);
   transition:0.2s;
+
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -225,7 +197,7 @@ h1{
 .charts{
   margin-top:20px;
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns: 1fr 1fr;  /* 👈 same as pehle */
   gap:20px;
 }
 
@@ -357,6 +329,7 @@ button:hover{
   font-weight:bold;
 }
 
+
 /* =====================================
    MOBILE
 ===================================== */
@@ -395,7 +368,7 @@ img{
 .billing-grid{
   width:100%;
   display:grid;
-  grid-template-columns: repeat(210, 240px); /* 👈 fixed width */
+  grid-template-columns: repeat(2, 1fr);
   gap: 60px;
   margin-bottom:10px;
   
@@ -436,10 +409,29 @@ img{
 
 .report-controls{
   display:flex;
-  gap:16px;
-  margin-left:25px
+  gap:14px;
+  margin-left:2px
+  
 }
 
+.report-controls button.active{
+  background:#22c55e !important;
+   gap:15px;
+}
+
+
+/* ===== FIX UNLOCK BUTTON CENTER (REPORT PAGE) ===== */
+
+#accessPopup button{
+  display:block;
+  margin:15px auto !important;
+
+  width:220px;
+  max-width:80%;
+
+  border-radius:10px;
+  font-weight:600;
+}
 /* =====================================
    WIFI INDICATOR
 ===================================== */
@@ -597,8 +589,9 @@ img{
 }
 
 /* ===== ACCESS POPUP INPUT ===== */
-#accessPass{
-  width:100%;
+#accessPopup #accessPass{
+  width:85%;
+  right:-20px;   
   padding:10px;
   border-radius:8px;
   background:#1e293b;
@@ -901,158 +894,1006 @@ img{
   }
 }
 
-/* ================= MOBILE PERFECT FIX ================= */
-@media (max-width: 768px){
+/* ==================SLAB STYLES=============================== */
 
-  /* Sidebar → top horizontal (safe) */
-  .sidebar{
-    width: 100%;
-    height: auto;
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .sidebar a{
-    flex: 0 0 auto;
-  }
-
-  /* Main full width */
-  .main{
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding: 10px;
-  }
-
-  /* 🔥 KEEP GRID SAME BUT AUTO FIT */
-  .cards{
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  }
-
-  /* Charts stack */
-  .charts{
-    grid-template-columns: 1fr;
-  }
-
-  /* Settings grid FIX (NO BREAK) */
-  .settings-grid{
-    grid-template-columns: 1fr;   /* instead of block */
-  }
-
-  /* Card spacing */
-  .setting-card{
-    width: 100%;
-    margin-bottom: 15px;
-  }
-
-  /* Inputs safe */
-  .setting-card input,
-  .setting-card select{
-    width: 100%;
-  }
-
-  /* Buttons responsive */
-  button{
-    width: 100%;
-  }
-
-  /* Prevent overflow */
-  *{
-    box-sizing: border-box;
-  }
-
-  body{
-    overflow-x: hidden;
-  }
-
-  /* Fault strip wrap fix */
-  .fault-strip{
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .fault-strip > div{
-    min-width: 45%;
-  }
-
-  /* QR fix */
-  #qrCode{
-    position: static !important;
-    margin-top: 20px;
-  }
-
-}
-/*********MSEDCL BILL****************/
-/***********************************/
-.bill {
-  max-width: 700px;
-  margin: auto;
-  background: #fff;
-  padding: 25px;
-  border: 2px solid #000;
-  box-sizing: border-box;
-
-  page-break-inside: avoid;   /* 🔥 VERY IMPORTANT */
-  break-inside: avoid;        /* 🔥 modern fix */
+/* 🔥 CARD HEIGHT FIX (ALL PAGES SAFE) */
+body.app-page .card{
+  height:auto !important;
+  min-height:auto;
 }
 
-.row {
-  display: flex;
-  justify-content: space-between;
-  margin: 4px 0;
-  font-size: 13px;
-  word-break: break-word;
+/* ===== REMOVE DEFAULT GAPS ===== */
+html,body{
+  margin:0;
+  padding:0;
 }
 
-.row span:last-child {
-  text-align: right;
-  max-width: 50%;
+/* ===== SLAB STYLE (GLOBAL SAFE) ===== */
+body.app-page .slab{
+  background:#cbd5e1;
+  padding:12px;
+  border-radius:8px;
+  margin-top:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:14px;
+  color:#000;
+  font-weight:500;
 }
 
-.bill-ai-box {
-  background: #eef6ff;              /* 🔵 soft blue */
-  padding: 12px;
-  border-left: 5px solid #2196f3;
-  margin-top: 15px;
-  font-size: 13px;
+/* ===== EDIT MODE INPUT ===== */
+.edit-input{
+  width:48%;
+  padding:6px;
+  border-radius:6px;
+  border:1px solid #94a3b8;
+}
 
-  width: 100%;                      /* full width */
-  max-height: 180px;                /* 🔥 height control */
-  overflow-y: auto;                 /* scroll if large */
+/* ===== EDIT BUTTON ===== */
+body.app-page .edit-btn{
+  margin-top:10px;
+  background:#facc15;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  display:inline-flex;
+  margin:15px 0 0 0;
+  gap:5px;
+}
 
-  border-radius: 8px;
-  box-sizing: border-box;
+/* ===== SLAB TEXT FIX ===== */
+body.app-page .slab span{
+  color:#000;
+}
 
-  page-break-inside: avoid;         /* 🔥 PDF fix */
+/* ===== RATE COLOR ===== */
+body.app-page .rate-text{
+  color:#2563eb;
+  font-weight:600;
+}
+
+/* ===== RESULT TEXT FIX ===== */
+body.app-page .result{
+  color:#000;
+}
+
+/* ===== LABEL COLOR FIX (SAFE FOR ALL PAGES) */
+body.app-page .card label{
+  color:#000;
+}
+
+/* ===== SOLAR GRID FIX ONLY ===== */
+#solarCard .grid{
+  grid-template-columns: repeat(2,1fr);
+}
+
+@media(max-width:768px){
+  #solarCard .grid{
+    grid-template-columns:1fr;
+  }
+}
+
+/* ===== ACCESS POPUP FULL CONTROL (ONLY PASSWORD POPUP) ===== */
+/************* ENERGY POPUP ACCESS PASSWORD (FINAL) *************/
+
+/* overlay */
+#accessPopup{
+  display:flex;
+  opacity:1 !important;
+  backdrop-filter:blur(6px);
+  align-items:center;
+  justify-content:center;
+}
+
+/* 🔥 POPUP BOX */
+/* 🔥 POPUP BOX (SIZE + GLOW IMPROVED) */
+#accessPopup > div{
+  width:360px;              /* 🔥 thoda increase */
+  max-width:92%;
+  padding:30px;             /* 🔥 thoda spacious */
+
+  background:rgba(15,23,42,0.95) !important;
+  border-radius:16px;       /* 🔥 slightly smoother */
+
+  border:1px solid rgba(255,255,255,0.1);
+
+  /* 🔥 GLOW ADD */
+  box-shadow:
+    0 0 26px rgba(0,0,0,0.6),
+    0 0 16px rgba(56,189,248,0.25),   /* blue glow */
+    0 0 36px rgba(99,102,241,0.15);   /* soft purple glow */
+
+  animation:popIn 0.3s ease;
+}
+
+
+/* title */
+#accessPopup h3{
+  color:#38bdf8;
+  margin-bottom:10px;
+}
+
+/* 🔥 INPUT BOX WRAPPER (IMPORTANT) */
+#accessPopup .input-wrapper{
+  position:relative;
+  width:100%;
+  margin-top:10px;
+}
+
+/* input */
+#accessPopup #accessPass{
+  width:70%;
+  padding:10px 40px 10px 12px;
+
+  border-radius:8px;
+  background:#1e293b;
+  color:#fff;
+  border:1px solid #334155;
+  outline:none;
+}
+
+/* focus */
+#accessPopup #accessPass:focus{
+  border:1px solid #38bdf8;
+  box-shadow:0 0 6px #38bdf8;
+}
+
+/* 👁 eye icon PERFECT ALIGN */
+#accessPopup #eyeIcon{
+  position:absolute;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  cursor:pointer;
+  font-size:14px;
+}
+
+/* attempts */
+#accessPopup #attemptInfo{
+  font-size:12px;
+  color:#94a3b8;
+}
+
+#accessPopup button{
+  margin-top:15px;
+
+  width:200px;        /* 🔥 control length */
+  max-width:88%;      /* mobile safe */
+
+  height:42px;
+
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+
+  border-radius:10px;
+
+
+  background:linear-gradient(90deg,#22c55e,#16a34a);
+  color:#000;
+
+  border:none;
+  font-weight:600;
+  cursor:pointer;
+
+  transition:0.3s;
+}
+
+#accessPopup button:hover{
+  transform:scale(1.03);
+}
+
+/* disabled */
+.disabled{
+  opacity:0.5;
+  pointer-events:none;
+}
+
+
+#billCard, #solarCard{
+  width:100%;
+}
+
+.export-row label{
+  min-width:90px;
+}
+
+.export-panel{
+  backdrop-filter: blur(8px);
+}
+
+@keyframes activePulse{
+  0%{
+    box-shadow:0 0 10px rgba(99,102,241,0.5);
+  }
+  100%{
+    box-shadow:0 0 15px rgba(147,51,234,0.9);
+  }
+}
+
+
+
+
+
+/* ===== GLOBAL APP LAYOUT ===== */
+body.app-page{
+  margin:0;
+  display:flex;
+  background: linear-gradient(135deg,#020617,#0f172a);
+}
+
+/* SIDEBAR SAME FOR ALL */
+body.app-page .sidebar{
+  width:220px;
+  min-height:100vh;
+  background: linear-gradient(180deg,#020617,#0f172a);
+  padding:20px;
+}
+
+
+
+
+/* ================================================= */
+/* 🔥 GLOBAL + PAGE SPECIFIC MAIN LAYOUT FIX */
+/* ================================================= */
+
+/* ===== DEFAULT (ALL PAGES) ===== */
+body.app-page .main{
+  padding:20px;
+  min-height:100vh;
+}
+
+/* ===== ENERGY PAGE ===== */
+body.energy-page .main{
+  padding:50px 15px;
+}
+
+/* ===== EXPORT PAGE ===== */
+body.export-page .main{
+  padding:25px;
+}
+
+/* ===== INDEX PAGE ===== */
+body.index-page .main{
+  padding:20px;
+}
+
+/* ===== LIVE PAGE ===== */
+body.live-page .main{
+  padding:20px;
+}
+
+/* ===== PERFORMANCE PAGE ===== */
+body.performance-page .main{
+  padding:20px;
+}
+
+/* ===== REPORTS PAGE ===== */
+body.reports-page .main{
+  padding:20px;
+}
+
+/* ===== SETTINGS PAGE ===== */
+body.settings-page .main{
+  padding:20px;
+}
+
+
+/* ================================================= */
+/* 🔥 SIDEBAR CONSISTENCY FIX (ALL PAGES) */
+/* ================================================= */
+
+body.app-page .sidebar{
+  background: linear-gradient(135deg,#020617,#0f172a);
+  overflow-y:auto;
+}
+
+/* =====================================
+   FINAL SIDEBAR (CLEAN + SAME LOOK)
+===================================== */
+
+.sidebar{
+  width:220px;
+  min-height:100vh;
+  padding:20px;
+  flex-shrink:0;
+
+  display:flex;
+  flex-direction:column;
+
+  background: linear-gradient(180deg,#020617,#0f172a);
+
+  box-shadow:
+    4px 0 20px rgba(0,0,0,0.6),
+    inset 0 0 20px rgba(99,102,241,0.15);
+
+  border-right:1px solid rgba(255,255,255,0.05);
+}
+
+/* ===== TITLE ===== */
+.sidebar h2{
+  position:sticky;
+  top:0;
+  z-index:1000;
+
+  padding:10px 0;
+  margin-bottom:25px;
+
+  color:#38bdf8;
+  text-align:center;
+  font-weight:700;
+  letter-spacing:1px;
+
+  background: linear-gradient(180deg,#020617,#0f172a);
+}
+
+/* ===== LINKS ===== */
+.sidebar a{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  width:180px;              /* 👈 SAME LOOK */
+  margin:0 auto;
+
+  padding:12px 16px;
+  margin-bottom:10px;
+
+  color:#e5e7eb;
+  text-decoration:none;
+
+  border-radius:12px;
+
+  position:relative;
+  overflow:hidden;
+
+  transition: all 0.25s ease;
+}
+
+/* ===== ICON ===== */
+.sidebar a i{
+  margin-right:10px;
+  width:18px;
+  text-align:center;
+  transition:0.3s;
+}
+
+/* ===== LEFT ACTIVE BAR ===== */
+.sidebar a::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  width:4px;
+  background:linear-gradient(#6366f1,#9333ea);
+  opacity:0;
+  transition:0.3s;
+}
+
+/* ===== HOVER ===== */
+.sidebar a:hover{
+  background:#2563eb;
+  transform:translateX(5px);
+}
+
+/* ===== ACTIVE ===== */
+.sidebar a.active{
+  background:linear-gradient(135deg,#6366f1,#9333ea);
+  color:#fff;
+
+  transform:translateX(6px) scale(1.02);
+
+  width:180px;
+  margin:0 auto;
+
+  box-shadow:
+    0 0 10px rgba(99,102,241,0.7),
+    0 0 10px rgba(147,51,234,0.6),
+    inset 0 0 4px rgba(255,255,255,0.1);
+
+  animation: activePulse 2.2s infinite alternate;
+}
+
+/* ===== SHOW LEFT BAR ===== */
+.sidebar a.active::before{
+  opacity:1;
+}
+
+/* ===== ANIMATION ===== */
+@keyframes activePulse{
+  0%{
+    box-shadow:
+      0 0 10px rgba(99,102,241,0.5),
+      0 0 14px rgba(239, 20, 225, 0.3);
+  }
+  100%{
+    box-shadow:
+      0 0 10px rgba(147,51,234,0.9),
+      0 0 14px rgba(239, 20, 225, 0.4);
+  }
+}
+
+.row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  margin-top:5px;
+  font-size:15px;
+}
+
+
+
+
+
+
+
+
+
+/* =====================================
+   ENERGY PAGE ONLY CSS (FINAL CLEAN)
+===================================== */
+/* =====================================
+   ENERGY PAGE ONLY CSS (FINAL PRO UI)
+===================================== */
+
+body.energy-page .main{
+  flex:1;
+  padding:40px 20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* ===== TOGGLE ===== */
+body.energy-page .toggle{
+  display:flex;
+  gap:20px;
+  width:100%;
+  max-width:1050px;
+  margin-bottom:15px;
+}
+
+body.energy-page .toggle button{
+  flex:1;
+  height:48px;
+  border-radius:14px;
+  border:none;
+  background:#1e293b;
+  color:#cbd5f5;
+  cursor:pointer;
+  font-weight:500;
+  transition:0.3s;
+}
+
+body.energy-page .toggle button.active{
+  background:linear-gradient(90deg,#6366f1,#9333ea);
+  color:#fff;
+  box-shadow:0 0 15px rgba(99,102,241,0.5);
+}
+
+body.energy-page .toggle button:hover{
+  transform:scale(1.02);
+}
+
+/* ===== CARD ===== */
+body.energy-page .card{
+  width:100%;
+  max-width:1050px;
+  margin:10px auto;
+
+  border-radius:22px;
+  overflow:hidden;
+
+  background:#eef2f7;
+  box-shadow:0 20px 45px rgba(0,0,0,0.35);
+
+  height:auto !important;
+  padding:0 !important;
+}
+
+/* ===== HEADER ===== */
+body.energy-page .header{
+  text-align:center;
+  padding:20px;
+  background:linear-gradient(135deg,#6366f1,#9333ea);
+  color:#fff;
+}
+
+body.energy-page .header i{
+  font-size:26px;
+  margin-bottom:8px;
+}
+
+body.energy-page .header h2{
+  font-size:20px;
+  margin:5px 0;
+}
+
+body.energy-page .header p{
+  font-size:12px;
+  opacity:0.9;
+}
+
+/* ===== BODY ===== */
+body.energy-page .body{
+  background:#f8fafc;
+  padding:18px 20px;
+}
+
+/* ===== GRID ===== */
+body.energy-page .grid{
+  display:grid;
+  grid-template-columns: repeat(3,1fr);
+  gap:12px;
+}
+
+/* ===== FIELD ===== */
+body.energy-page .field{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+
+body.energy-page .field label{
+  font-size:13px;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:#374151;
+}
+
+body.energy-page .field label i{
+  color:#6366f1;
+}
+
+/* ===== INPUT ===== */
+body.energy-page .field input,
+body.energy-page .field select{
+  height:50px !important;
+  border-radius:12px;
+  border:1px solid #d1d5db;
+
+  padding:12px 14px !important;
+  font-size:14px;
+
+  color:#000 !important;              /* text black */
+  background:#f8fafc !important;  
+  width:100%;
+  box-sizing:border-box;
+
+  transition:0.2s;
+}
+
+/* ===== INPUT FOCUS ===== */
+body.energy-page .field input:focus,
+body.energy-page .field select:focus{
+  border:0.5px solid #6366f1;
+  box-shadow:0 0 0 3px rgba(99,102,241,0.15);
+  outline:none;
+}
+
+/* ===== INPUT BOX ===== */
+body.energy-page .input-box{
+  position:relative;
+}
+
+body.energy-page .input-box input{
+  padding-right:70px;
+}
+
+body.energy-page .input-box span{
+  position:absolute;
+  right:0;
+  top:0;
+  height:100%;
+  width:65px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:linear-gradient(135deg,#6366f1,#9333ea);
+  color:#fff;
+
+  border-top-right-radius:10px;
+  border-bottom-right-radius:10px;
+
+  font-size:12px;
+  font-weight:600;
+}
+
+/* ===== SMALL TEXT ===== */
+body.energy-page .field small{
+  font-size:11px;
+  color:#6b7280;
+}
+
+/* ===== SLABS ===== */
+body.energy-page #slabsContainer{
+  width:100%;
+  margin-top:18px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+body.energy-page .slab{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  color:#000 !important;
+  background:linear-gradient(90deg,#EAF5FC,#E3F2FB);
+  border-radius:10px;
+
+  padding:5px 10px !important;
+  font-size:13px;
+  font-weight:200;
+
+  transition:0.2s;
+}
+
+body.energy-page .slab:hover{
+  transform:scale(1.01);
+  background:#d3e0f0;
+}
+
+body.energy-page .slab-title{
+  font-size:13px;
+  font-weight:600;
+  color:#000;
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+/* ===== RATE ===== */
+body.energy-page .rate-text{
+  color:#2563eb;
+  font-weight:600;
+  background:#e0ecff;
+  padding:4px 10px;
+  border-radius:8px;
+}
+
+/*****UNITS******/
+
+body.energy-page .unit-text{
+  color:#000 !important;
+}
+
+/* ===== BUTTON ===== */
+body.energy-page .btn{
+  width:100%;
+  height:52px;
+
+  margin-top:20px;
+  border:none;
+  border-radius:14px;
+
+  background:linear-gradient(90deg,#6366f1,#9333ea);
+  color:#fff;
+
+  font-weight:600;
+  letter-spacing:0.5px;
+  cursor:pointer;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+
+  transition:0.3s;
+}
+
+body.energy-page .btn:hover{
+  transform:scale(1.02);
+  box-shadow:0 10px 25px rgba(99,102,241,0.4);
+}
+
+/* ===== RESULT ===== */
+body.energy-page .result{
+  text-align:center;
+  margin-top:15px;
+  font-size:15px;
+}
+
+body.energy-page .result b{
+  display:block;
+  margin-top:5px;
+  font-size:18px;
+}
+
+/* ===== EDIT BUTTON ===== */
+body.energy-page .edit-btn{
+  margin-top:10px;
+  background:#facc15;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+
+/* ===== HIDDEN ===== */
+body.energy-page .hidden{
+  display:none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  body.energy-page .grid{
+    grid-template-columns:1fr;
+  }
+}
+
+/* 🔥 ICON COLOR FIX */
+body.energy-page .field label i,
+body.energy-page .header i{
+  color:#000 !important;
+}
+
+
+/*======SHOW DETAIL & RESULTTEXT===*/
+/* 🔥 RESULT TEXT BLACK */
+body.energy-page .result{
+  color:#000;
+}
+
+body.energy-page .result .row{
+  display:flex;
+  justify-content:space-between;
+  padding:6px 4px;
+  font-size:14px;
+}
+
+/* 🔥 TOTAL HIGHLIGHT */
+body.energy-page .total-row{
+  font-weight:700;
+  font-size:16px;
+  margin-top:5px;
+}
+
+/* 🔥 DETAILS BUTTON */
+body.energy-page .detail-btn{
+  margin-top:10px;
+  background:#6366f1;
+  color:#fff;
+  border:none;
+  padding:6px 12px;
+  border-radius:8px;
+  cursor:pointer;
+
+  display:flex;
+  align-items:center;
+  gap:6px;
+
+  font-size:12px;
+}
+
+/* 🔥 ICON SIZE */
+body.energy-page .detail-btn i{
+  font-size:11px;
+}
+
+/* 🔥 HIDDEN DETAILS SMALL */
+#billDetails{
+  margin-top:8px;
+  font-size:13px;
+  opacity:0.9;
+}
+
+/* 🔥 SMOOTH LOOK */
+#billDetails .row{
+  padding:4px 2px;
+}
+
+
+/* ================= FINAL PDF FIX (NO CONFLICT) ================= */
+
+/* ================= PDF FINAL FIX ================= */
+
+/* BODY CLEAN */
+body.pdf-mode {
+  background:#fff !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* 🔥 HIDE EVERYTHING */
+body.pdf-mode .main,
+body.pdf-mode .sidebar,
+body.pdf-mode .toggle,
+body.pdf-mode .health-box,
+body.pdf-mode .export-panel,
+body.pdf-mode .cards,
+body.pdf-mode canvas,
+body.pdf-mode #solarCard,
+body.pdf-mode #billCard {
+  display:none !important;
+}
+
+/* 🔥 SHOW BILL ONLY */
+body.pdf-mode #bill {
+  display:block !important;
+  visibility:visible !important;
+}
+
+/* ================= BILL STYLE ================= */
+/* ================= FINAL BILL STYLE (CLEAN PDF) ================= */
+
+#bill{
+  background:#fff !important;
+  color:#000 !important;
+  font-family: Arial, sans-serif;
+ 
+  
+   width:100%;
+  max-width:185mm;  /* 🔥 perfect fit inside A4 */
+  padding:-4px 10px;  
+  position:relative;
+ line-height:1.3;
+  
+
+  border:1px solid #000;
+  padding:12px 62px 10px 20px;  /* 🔥 improved spacing */
+  margin-bottom:0;
+  padding-bottom:8px;
+    
+
+  box-sizing:border-box;
+
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  page-break-inside: avoid;
   break-inside: avoid;
 }
-.ai-box b {
-  display: block;
-  margin-bottom: 5px;
+
+/* ===== HEADER ===== */
+#bill .pdf-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:space-between;
+
+  background:#fff !important;
+  color:#000 !important;
+
+  padding:8px 10px;
+  border-bottom:1px solid #000;
 }
 
-.ai-box br {
-  line-height: 1.6;
+#bill .pdf-header img{
+  width:75px !important;   /* 🔥 perfect balance */
+  height:85px !important;
+  object-fit:contain;
+  gap:10px;
 }
 
-.instructions {
-  margin-top: 15px;
-  font-size: 12px;
+/* ===== CENTER TITLE ===== */
+#bill .center{
+  flex:1;
+  text-align:center;
 
-  page-break-inside: avoid;   /* 🔥 cut nahi hoga */
+  font-size:13px;   /* 🔥 improved readability */
+  font-weight:bold;
+  line-height:1.4;
+}
+
+/* ===== TABLE ===== */
+#bill table{
+  width:100%;   /* ✅ simple rakho */
+  border-collapse:collapse;
+  margin:10px 0;
+  table-layout:fixed;
+}
+
+
+/* 🔥 PERFECT CELL ALIGNMENT */
+#bill td, #bill th{
+  border:1px solid #000;
+  padding:7px;
+  box-sizing:border-box;
+  font-size:12px;
+  vertical-align:middle;
+}
+
+/* 🔥 EQUAL COLUMN WIDTH */
+#bill td:nth-child(1),
+#bill td:nth-child(3){
+  width:25%;
+  font-weight:500;
+}
+
+#bill td:nth-child(2),
+#bill td:nth-child(4){
+  width:25%;
+}
+
+/* ===== SECTION TITLE ===== */
+#bill .section-title{
+  margin-top:14px;
+  margin-bottom:4px;
+  font-weight:bold;
+  border-bottom:1px solid #000;
+  font-size:13px;
+  padding-bottom:2px;
+}
+
+/* ===== ROW FLEX ===== */
+#bill .row{
+  display:flex;
+  justify-content:space-between;
+  margin:6px 0;
+  font-size:13px;
+}
+
+#bill .row span:last-child{
+  text-align:right;
+}
+
+/* ===== TOTAL ===== */
+#bill .total{
+  font-weight:bold;
+  font-size:14px;
+}
+
+/* ===== AI BOX ===== */
+#bill .bill-ai-box{
+  background:#f8fbff;
+  padding:10px;
+  border-left:3px solid #c3e0f8;
+  margin-top:8px;
+  font-size:12px;
+  line-height:1.5;
+}
+
+/* ===== SIGN ===== */
+#bill .sign{
+  margin-top:10px;
+  text-align:right;
+  font-size:12px;
+  padding-right:10px;   /* 🔥 fix edge cut */
+
+  margin-bottom:0;
+  margin-top:auto;   
+  padding-bottom:15px;
+}
+
+
+#bill .instructions{
+  font-family: "Times New Roman", Times, serif;
+  margin: 5px;
+  font-size:13px;
+}
+
+#bill .instructions b{
+  font-family: Calibri, Arial, sans-serif;  /* heading same rahe */
+}
+
+/* ===== REMOVE PAGE BREAK ISSUES ===== */
+#bill{
+  page-break-inside: avoid;
   break-inside: avoid;
 }
 
-.logo{
-  width:70px;
-  height:auto;
+#bill *{
+  max-width:100%;
+  overflow-wrap:break-word;
 }
 
-.sign {
-  margin-top: 25px;
-  text-align: right;
-  font-size: 12px;
 
-  page-break-inside: avoid;   /* 🔥 MAIN FIX */
-  break-inside: avoid;
+#bill > *:last-child{
+  margin-bottom:0 !important;
+  
 }

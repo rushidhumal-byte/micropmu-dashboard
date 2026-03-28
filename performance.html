@@ -29,20 +29,44 @@ grid-template-columns:1fr 1fr;
 margin-top:25px;
 }
 </style>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 
-<body class="performance-page">
+<body class="app-page performance-page">
 
-<!-- SIDEBAR -->
 <div class="sidebar">
-<h2>Micro-PMU</h2>
-<a href="index.html">Dashboard</a>
-<a href="performance.html">Performance</a>
-<a href="live.html">Live Data</a>
-<a href="reports.html">Reports</a>
-<a href="export.html">Exports</a>
-<a href="settings.html">Settings</a>
+  <h2><i class="fas fa-microchip"></i> Micro-PMU</h2>
+
+  <a href="index.html">
+    <i class="fas fa-chart-line"></i> Dashboard
+  </a>
+
+  <a href="performance.html" class="active">
+    <i class="fas fa-gauge-high"></i> Performance
+  </a>
+
+  <a href="live.html">
+    <i class="fas fa-wave-square"></i> Live Data
+  </a>
+
+  <a href="reports.html">
+    <i class="fas fa-file-alt"></i> Reports
+  </a>
+
+  <a href="export.html">
+    <i class="fas fa-download"></i> Exports
+  </a>
+
+  <a href="energy.html">
+    <i class="fas fa-bolt"></i> Energy Tools
+  </a>
+
+  <a href="settings.html">
+    <i class="fas fa-gear"></i> Settings
+  </a>
 </div>
+
 
 <!-- MAIN -->
 <div class="main">
@@ -188,7 +212,7 @@ Advanced Electrical Performance & Energy Intelligence
       <input type="password" id="accessPass" placeholder="Enter password">
 
       <span id="eyeIcon" onclick="togglePass()" 
-      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;">
+      style="position:absolute;right:25px;top:50%;transform:translateY(-50%);cursor:pointer;">
         👁
       </span>
 
@@ -212,7 +236,10 @@ Advanced Electrical Performance & Energy Intelligence
 <!-- 2. html2pdf -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<!-- 3. MAIN JS LAST -->
+<!-- 3. MD5 (ADD HERE) ✅ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+
+<!-- 4. MAIN JS LAST -->
 <script src="js/main.js"></script>
 </body>
 </html>
