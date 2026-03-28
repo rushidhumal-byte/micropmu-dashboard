@@ -49,7 +49,7 @@ let connectedDevices = 1;
 let isAdminDevice = false;
 let analysisIndex = 0;
 let faultDuration = 0;
-let faultStart = 0;
+let faultStart = null;
 let activeFaultType = "NORMAL";
 let faultHoldTime = 0;
 let faultTimer = 0;
@@ -61,6 +61,8 @@ let accessMode = "";
   let breakdown = [];
   let faultCooldownActive = false;
   let faultCooldownTime = 0;
+  let forceNormalAfterFault = false;
+let recoveryCounter = 0;
 
 
 
@@ -292,6 +294,11 @@ function applySystemPhysics(){
     temperature += 5;
   }
 
+  // ================= PF NATURAL RECOVERY =================
+if (pf < 0.98) {
+  pf += 0.005;
+}
+
   // ================= LOAD HEATING =================
   if (current > LIMITS.OVERLOAD_CURRENT){
     temperature += (current - LIMITS.OVERLOAD_CURRENT) * 1.5;
@@ -361,10 +368,6 @@ function applyFault(type) {
   pf = parseFloat((0.92 + Math.random() * 0.05).toFixed(2));
 
   frequency = parseFloat((49.99 + Math.random() * 0.02).toFixed(2));
-
-  // 🔥 PF recovery (ADD HERE)
-  pf += 0.01;
-  if (pf > 0.98) pf = 0.98;
 
   // 🔥 cooling
   temperature -= 2;
@@ -759,30 +762,25 @@ if (el) {
     level = "HIGH";
     color = "#f43f5e";
   }
-  else if (status === "SHORT CIRCUIT") {
+ else if (status === "SHORT CIRCUIT") {
 
-
-  if (current < 5) {
-  level = "NORMAL";
-  color = "#22c55e";
-}
-else if (current < 15) {
-  level = "HIGH";
-  color = "#fb923c";
-}
-else if (current < 25) {
-  level = "CRITICAL";
-  color = "#f97316";
-}
-else if (current < 35) {
-  level = "CRITICAL+";
-  color = "#ef4444";
-}
-else {
-  level = "CRITICAL++";
-  color = "#dc2626";
-}
+  if (current < 15) {
+    level = "HIGH";
+    color = "#fb923c";
   }
+  else if (current < 20) {
+    level = "CRITICAL";
+    color = "#f97316";
+  }
+  else if (current < 25) {
+    level = "CRITICAL+";
+    color = "#ef4444";
+  }
+  else {
+    level = "CRITICAL++";
+    color = "#dc2626";
+  }
+}
 
   // 🔥 IMPORTANT (missing part)
   el.innerText = level;
@@ -1426,7 +1424,8 @@ if(rateEl){
   const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
 
   if(logs.length % 10 !== 0) return;
-  const usedBytes = new TextEncoder().encode(jsonString).length;
+  const jsonString = JSON.stringify(logs);
+const usedBytes = new TextEncoder().encode(jsonString).length;
 
   // ✅ FIX (order correct)
   const maxBytes = 1 * 1024 * 1024;
@@ -2469,14 +2468,6 @@ window.isAdminDevice = false;
       }
     };
 
-    /*********************************
-      QR ENGINE
-    *********************************/
-
-    /*********************************
- SMART LINK GENERATOR (FINAL FIX)
-*********************************/
-
 /*********************************
  SMART LINK GENERATOR (FINAL REAL FIX)
 *********************************/
@@ -2671,30 +2662,33 @@ function updateSystem() {
     temperature = Math.max(28, Math.min(temperature, 60));
 
     // ===== FAULT / NORMAL DECISION =====
-    if (event <= 70) {
 
-      // NORMAL
-      activeFaultType = "NORMAL";
+// ===== NORMAL =====
+if (event <= 45) {
 
-      // 🔥 longer stable gap
-      faultHoldTime = Math.floor(Math.random() * 3000) + 2000; // 2–5 sec
-    }
-    else {
+  activeFaultType = "NORMAL";
+  faultHoldTime = Math.floor(Math.random() * 3000) + 2000;
 
-      // FAULT
-      faultHoldTime = Math.floor(Math.random() * 3000) + 200; // 0.2–3 sec
+}
+else {
 
-      if (event <= 78) activeFaultType = "LOW VOLTAGE";
-      else if (event <= 84) activeFaultType = "OVER VOLTAGE";
-      else if (event <= 89) activeFaultType = "HIGH CURRENT";
-      else if (event <= 93) activeFaultType = "OVERLOAD";
-      else if (event <= 96) activeFaultType = "LOW POWER FACTOR";
-      else if (event <= 98) activeFaultType = "UNDER FREQUENCY";
-      else if (event <= 99) activeFaultType = "OVER FREQUENCY";
-      else activeFaultType = "SHORT CIRCUIT";
-    }
+  // ===== FAULT =====
+  faultHoldTime = Math.floor(Math.random() * 2500) + 500;
 
-    applyFault(activeFaultType);
+  if (event <= 55) activeFaultType = "LOW VOLTAGE";        // 10%
+  else if (event <= 63) activeFaultType = "OVER VOLTAGE";   // 8%
+  else if (event <= 71) activeFaultType = "HIGH CURRENT";   // 8%
+  else if (event <= 78) activeFaultType = "OVERLOAD";       // 7%
+  else if (event <= 85) activeFaultType = "LOW POWER FACTOR"; // 7%
+  else if (event <= 90) activeFaultType = "UNDER FREQUENCY"; // 5%
+  else if (event <= 95) activeFaultType = "OVER FREQUENCY";  // 5%
+  else activeFaultType = "SHORT CIRCUIT";                   // 5%
+
+  // 🔥 recovery trigger
+  if (activeFaultType === "SHORT CIRCUIT") {
+    forceNormalAfterFault = true;
+  }
+}
   }
 
   // ===== LIMITS =====
@@ -2728,78 +2722,6 @@ function updateSystem() {
   }
 }
 
-
-function applyFault(type) {
-
-  switch (type) {
-
-    case "NORMAL":
-      voltage = random(220, 235);
-
-      let baseCurrent = (Math.random() * 3 + 1);
-      current = current * 0.8 + baseCurrent * 0.2;
-
-      pf = parseFloat((0.94 + Math.random() * 0.04).toFixed(2));
-      frequency = parseFloat((49.99 + Math.random() * 0.02).toFixed(2));
-
-      temperature -= 2;
-      if (temperature < 30) temperature = 30;
-      break;
-
-    case "LOW VOLTAGE":
-      voltage = random(180, 205);
-      current *= 1.2;
-      temperature += 5;
-      break;
-
-    case "OVER VOLTAGE":
-      voltage = random(240, 260);
-      current *= 0.85;
-      temperature += 2;
-      break;
-
-    case "HIGH CURRENT":
-      current = random(8, 12);
-      temperature += 8;
-      voltage -= 5;
-      break;
-
-    case "OVERLOAD":
-      current = random(10, 14);
-      voltage -= 10;
-      pf -= 0.05;
-      temperature += 15;
-      break;
-
-    case "LOW POWER FACTOR":
-      pf = parseFloat((0.6 + Math.random() * 0.15).toFixed(2));
-      current *= 1.3;
-      temperature += 10;
-      break;
-
-    case "UNDER FREQUENCY":
-      frequency = random(47, 48.8);
-      break;
-
-    case "OVER FREQUENCY":
-      frequency = random(50, 51.1);
-      break;
-
-    case "SHORT CIRCUIT":
-
-      voltage = random(180, 210);
-
-      const scLevel = random(1, 3);
-
-      if (scLevel === 1) current = random(15, 20);
-      else if (scLevel === 2) current = random(20, 35);
-      else current = random(35, 50);
-
-      pf = 0.6;
-      temperature += 20;
-      break;
-  }
-}
   // ==============================================
   // GLOBAL SAVE SETTINGS (CLEAN VERSION)
   // ==============================================
