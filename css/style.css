@@ -31,7 +31,7 @@ h1{
   background:#020617;
   padding:20px;
   border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
   margin-bottom:20px;
 }
 
@@ -46,18 +46,16 @@ h1{
 }
 
 body:not(.energy-page) .card{
-  height:95px;
-  /* 🔥 FORCE APPLY */
+  height:90px;           /* 🔥 FIXED HEIGHT */
   padding:14px;
   border-radius:12px;
   text-align:center;
-  font-size:14px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.6);
-  transition:0.2s;
+  font-size:18px;
 
   display:flex;
   flex-direction:column;
   justify-content:center;
+
 }
 
 .card:hover{
@@ -206,7 +204,7 @@ body:not(.energy-page) .card{
   background:#020617;
   padding:18px;
   border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
 }
 
 canvas{
@@ -224,7 +222,7 @@ canvas{
   aspect-ratio:1/1;
  background:#020617;
   border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
 }
 
 
@@ -304,7 +302,7 @@ min-height:auto;
   background:#020617;
   padding:20px;
   border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
   margin-bottom:20px;
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
@@ -319,7 +317,7 @@ input,button{
   border:none;
 }
 
-button:hover{
+button:not(.save-btn):hover{
   background:#1d4ed8;
 }
 
@@ -617,7 +615,8 @@ img{
 
   position: absolute;   /* 🔥 MAIN FIX */
   right: 90px;          /* adjust as needed */
-  top: 650px;           /* adjust to same position */
+  top: 650px !important;    /* adjust to same position */
+  
 }
 .qr-card{
   position: relative;   /* 🔥 only this card affected */
@@ -696,7 +695,7 @@ img{
 
 /* ===== FAULT BLINK (BORDER ONLY) ===== */
 .fault-blink{
-  animation: faultBlink 1s infinite;
+  animation: faultBlink 1.5s infinite;
 }
 
 @keyframes faultBlink{
@@ -1048,6 +1047,16 @@ body.app-page .card label{
   transform:translateY(-50%);
   cursor:pointer;
   font-size:14px;
+}
+
+#accessPopup #eyeIcon i{
+  color:#94a3b8;
+  transition:0.2s;
+}
+
+#accessPopup #eyeIcon:hover i{
+  color:#38bdf8;
+  transform:scale(1.2);
 }
 
 /* attempts */
@@ -1896,4 +1905,16 @@ body.pdf-mode #bill {
 #bill > *:last-child{
   margin-bottom:0 !important;
   
+}
+
+
+
+#adminEye i{
+  color:#94a3b8;
+  transition:0.2s;
+}
+
+#adminEye:hover i{
+  color:#38bdf8;
+  transform:scale(1.2);
 }

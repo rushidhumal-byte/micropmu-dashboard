@@ -96,7 +96,6 @@ margin-top:10px;
   </a>
 </div>
 
-<div class="main">
 
 <div class="main">
 
@@ -405,13 +404,13 @@ Auto detect works if ESP is on same network.
   <span onclick="copyLink()" 
     style="
       position:absolute;
-      right:-36px;
-      top:50%;
+      right:-32px;
+      top:52%;
       transform:translateY(-50%);
       cursor:pointer;
     ">
-    📋
-  </span>
+    <i class="fas fa-copy"></i>
+</span>
 
 </div>
 <button onclick="generateQR()">Generate QR</button>
@@ -487,14 +486,14 @@ Auto detect works if ESP is on same network.
     <span id="adminEye" onclick="toggleAdminPass()" 
       style="
         position:absolute;
-        right:-32px;
-        top:50%;
+        right:-34px;
+        top:56%;
         transform:translateY(-50%);
         cursor:pointer;
         font-size:16px;
       ">
-      👁
-    </span>
+      <i class="fas fa-eye"></i>
+</span>
 
   </div>
 
@@ -559,8 +558,8 @@ Password required once per tab session.
 
       <span id="eyeIcon" onclick="togglePass()" 
       style="position:absolute;right:25px;top:50%;transform:translateY(-50%);cursor:pointer;">
-        👁
-      </span>
+  <i class="fas fa-eye"></i>
+</span>
 
     </div>
 
@@ -578,6 +577,8 @@ Password required once per tab session.
 
 <!-- 1. Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- 2. html2pdf -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>

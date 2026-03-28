@@ -6,6 +6,7 @@
 /* ===== FINAL SYSTEM LIMITS ===== */
 const deviceId = localStorage.getItem("deviceId") || ("dev_" + Math.random().toString(36).substr(2, 9));
 localStorage.setItem("deviceId", deviceId);
+const DEG = 180 / Math.PI;
 const LIMITS = {
 
 
@@ -58,6 +59,10 @@ let accessMode = "";
   let attemptsLeft = 3;
   let energyCharge = 0;
   let breakdown = [];
+  let faultCooldownActive = false;
+  let faultCooldownTime = 0;
+
+
 
 // ===== ML HISTORY + DYNAMIC LIMITS =====
 let history = [];
@@ -240,7 +245,7 @@ function playBuzzer() {
 
   if (buzzerMuted) return;
 
-  if (!buzzerPlaying) {
+  if (!buzzerPlaying && buzzer.paused) {
 
     buzzer.play().catch(() => { });
     buzzerPlaying = true;
@@ -275,17 +280,97 @@ function random(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function applySystemPhysics(){
+
+  // ================= VOLTAGE ↔ CURRENT =================
+  if (voltage > 240) current *= 0.9;
+  if (voltage < 210) current *= 1.15;
+
+  // ================= PF EFFECT =================
+  if (pf < 0.85){
+    current *= 1.1;
+    temperature += 5;
+  }
+
+  // ================= LOAD HEATING =================
+  if (current > LIMITS.OVERLOAD_CURRENT){
+    temperature += (current - LIMITS.OVERLOAD_CURRENT) * 1.5;
+  }
+
+  // ================= SHORT CIRCUIT =================
+  if (current > LIMITS.SHORT_CURRENT){
+    temperature += 20;
+    voltage *= 0.9; // 🔥 voltage drop due to fault
+  }
+
+  // ================= FREQUENCY EFFECT =================
+  if (frequency < 49 || frequency > 51){
+    temperature += 3;
+    current *= 1.05; // instability → more stress
+  }
+
+  // ================= TEMPERATURE FEEDBACK =================
+  // high temperature → resistance ↑ → current slightly ↓
+  if (temperature > 50){
+    current *= 0.95;
+  }
+
+  // ================= VOLTAGE DROP DUE TO LOAD =================
+  // heavy load → voltage sag (real grid behavior)
+  if (current > 8){
+    voltage -= (current * 0.5);
+  }
+
+  // ================= PF ↔ VOLTAGE RELATION =================
+  if (pf < 0.8){
+    voltage -= 2;
+  }
+
+  // ================= THERMAL COOLING (IMPORTANT 🔥) =================
+  // natural cooling effect (transformer behavior)
+  let ambient = 28;
+  if (temperature > ambient){
+    temperature -= (temperature - ambient) * 0.02;
+  }
+
+  // ================= NO NEGATIVE / LIMIT =================
+  temperature = Math.min(temperature, 80);
+  temperature = Math.max(28, temperature);
+
+  current = Math.max(0, current);
+  voltage = Math.max(180, voltage);
+
+  // ================= CLEAN VALUES =================
+  current = parseFloat(current.toFixed(2));
+  voltage = parseFloat(voltage.toFixed(2));
+  temperature = parseFloat(temperature.toFixed(1));
+}
+
+
 function applyFault(type) {
 
   switch (type) {
 
     case "NORMAL":
-      voltage = random(220, 235);
-      current = parseFloat((Math.random() * 3 + 1).toFixed(2));
-      frequency = parseFloat((49.9 + Math.random() * 0.2).toFixed(2));
-      pf = parseFloat((0.92 + Math.random() * 0.06).toFixed(2));
-      temperature = parseFloat((30 + Math.random() * 10).toFixed(1));
-      break;
+
+  voltage = random(220, 235);
+
+  let baseCurrent = (Math.random() * 3 + 1);
+  current = current * 0.8 + baseCurrent * 0.2;
+
+  pf = parseFloat((0.92 + Math.random() * 0.05).toFixed(2));
+
+  frequency = parseFloat((49.99 + Math.random() * 0.02).toFixed(2));
+
+  // 🔥 PF recovery (ADD HERE)
+  pf += 0.01;
+  if (pf > 0.98) pf = 0.98;
+
+  // 🔥 cooling
+  temperature -= 2;
+  if (temperature < 30) temperature = 30;
+
+  break;
 
     case "LOW VOLTAGE":
       voltage = random(180, 205);
@@ -676,18 +761,27 @@ if (el) {
   }
   else if (status === "SHORT CIRCUIT") {
 
-    if (current < 20) {
-      level = "CRITICAL";
-      color = "#f97316";
-    }
-    else if (current < 35) {
-      level = "CRITICAL+";
-      color = "#ef4444";
-    }
-    else {
-      level = "CRITICAL++";
-      color = "#dc2626";
-    }
+
+  if (current < 5) {
+  level = "NORMAL";
+  color = "#22c55e";
+}
+else if (current < 15) {
+  level = "HIGH";
+  color = "#fb923c";
+}
+else if (current < 25) {
+  level = "CRITICAL";
+  color = "#f97316";
+}
+else if (current < 35) {
+  level = "CRITICAL+";
+  color = "#ef4444";
+}
+else {
+  level = "CRITICAL++";
+  color = "#dc2626";
+}
   }
 
   // 🔥 IMPORTANT (missing part)
@@ -792,7 +886,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 🔥 Better color logic
     if (status !== "SYSTEM HEALTHY") {
-      aiBtn.style.background = "#ef4444"; // red (fault)
+      aiBtn.style.background = "#be4dfa"; // red (fault)
     } else {
       aiBtn.style.background = "#22c55e"; // green (normal)
     }
@@ -1194,7 +1288,7 @@ if(rateEl){
   const value = parseInt(settings.logValue) || 1;
   const unit = settings.logUnit || "sec";
 
-  let interval = 1000;
+  let interval = 1500;
 
   if(unit === "sec") interval = value * 1000;
   else if(unit === "min") interval = value * 60000;
@@ -1304,7 +1398,7 @@ if(rateEl){
 
     container.innerHTML = "";
 
-    timeline.slice().reverse().forEach(e => {
+    timeline.slice(-50).reverse().forEach(e => {
 
       const row = document.createElement("div");
 
@@ -1331,7 +1425,7 @@ if(rateEl){
 
   const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
 
-  const jsonString = JSON.stringify(logs);
+  if(logs.length % 10 !== 0) return;
   const usedBytes = new TextEncoder().encode(jsonString).length;
 
   // ✅ FIX (order correct)
@@ -1897,7 +1991,7 @@ function setLoading(type){
       const db = firebase.database();
       const ref = db.ref("micropmu/live");
 
-      ref.on("value", (snapshot) => {
+      ref.on("child_changed", (snapshot) => {
 
         const data = snapshot.val();
         if (!data) return;
@@ -1936,9 +2030,11 @@ function setLoading(type){
         const end = performance.now();
         espLatency = Math.round(end - start);
 
+        requestAnimationFrame(() => {
         updateDashboard();
         updateWiFiStatus();
         updateSyncStatus();
+        });
 
       });
 
@@ -2486,14 +2582,13 @@ window.generateQR = function(){
   })();
 
 
-  function getRandomFaultDuration() {
-    return Math.floor(Math.random() * 3000) + 1000;
-    // 🔥 1s to 4s realistic fault duration
-  }
+  faultHoldTime = Math.floor(Math.random() * 4900) + 100;
 
-  function updateSystem() {
 
-   
+/*========DASHBORDS VALUES CONTROL===========*
+=============================================*/
+function updateSystem() {
+
   const settings = getSettings();
   const mode = settings.systemMode || "simulation";
 
@@ -2523,201 +2618,188 @@ window.generateQR = function(){
     phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
 
     analysisIndex++;
-
-    if (analysisIndex >= window.analysisDataset.length) {
-      analysisIndex = 0;
-    }
+    if (analysisIndex >= window.analysisDataset.length) analysisIndex = 0;
 
     updateDashboard();
     return;
   }
 
-  
-    // ================= SIMULATION =================
+  // ================= SIMULATION =================
+  const now = Date.now();
 
-      const now = Date.now();
+  // ===== INIT =====
+  if (faultStart === null) {
+    faultStart = now;
+    activeFaultType = "NORMAL";
+    faultHoldTime = Math.floor(Math.random() * 3000) + 2000; // 2–5 sec stable
+    return;
+  }
 
-      // ===== CONTINUE SAME EVENT =====
-      if ((now - faultStart) < faultHoldTime) {
-        faultHoldTime = Math.floor(Math.random() * 5000) + 100; 
-// 👉 100ms to 5 sec (ultra realistic)
+  let elapsed = now - faultStart;
 
-        applyFault(activeFaultType);
+  // ===== CONTINUE SAME STATE =====
+  if (elapsed < faultHoldTime) {
+    applyFault(activeFaultType);
+  }
+  else {
 
-      }
-      else {
+    // ===== NEW STATE START =====
+    faultStart = now;
 
-        // ===== REALISTIC GRID ENGINE =====
-        const event = random(1, 100);
+    const event = Math.floor(Math.random() * 100) + 1;
 
-        // BASE SYSTEM
-        let baseVoltage = random(225, 235);
-        let basePF = parseFloat((0.94 + Math.random() * 0.04).toFixed(2));
-        let baseFreq = 50 + (Math.random() - 0.5) * 0.02;
-            baseFreq = parseFloat(baseFreq.toFixed(2));
-        let loadKW = parseFloat((Math.random() * 2 + 1).toFixed(2));
+    // ===== BASE SYSTEM =====
+    let baseVoltage = random(225, 235);
+    let basePF = parseFloat((0.94 + Math.random() * 0.04).toFixed(2));
+    let baseFreq = parseFloat((50 + (Math.random() - 0.5) * 0.02).toFixed(2));
+    let loadKW = parseFloat((Math.random() * 2 + 1).toFixed(2));
 
-        // ===== CLEAN NUMBERS =====
-        pf = parseFloat(pf.toFixed(2));
-        current = parseFloat(current.toFixed(2));
-        voltage = parseFloat(voltage.toFixed(1));
-        temperature = parseFloat(temperature.toFixed(1));
-        frequency = parseFloat(frequency.toFixed(2));
+    voltage = baseVoltage;
+    pf = basePF;
+    frequency = baseFreq;
 
-        // ===== TEMP LIMIT =====
-        temperature = Math.min(temperature, 60);
-        temperature = Math.max(28, temperature);
+    // ===== CURRENT =====
+    let targetCurrent = (loadKW * 1000) / (voltage * pf);
+    current = current * 0.85 + targetCurrent * 0.15;
+    if (current < 0.05) current = 0;
 
-        // INITIAL
-        voltage = baseVoltage;
-        pf = basePF;
-        frequency = baseFreq;
+    // ===== TEMPERATURE =====
+    let ambient = 28;
+    let heating = current * 1.5;
+    let targetTemp = ambient + heating;
+    temperature = temperature * 0.95 + targetTemp * 0.05;
+    temperature = Math.max(28, Math.min(temperature, 60));
 
-        
-        // SMOOTH CURRENT 🔥
-        // ===== ULTRA STABLE CURRENT =====
-           let targetCurrent = (loadKW * 1000) / (voltage * pf);
+    // ===== FAULT / NORMAL DECISION =====
+    if (event <= 70) {
 
-        // smoothing (real load inertia)
-           current = current * 0.85 + targetCurrent * 0.15;
+      // NORMAL
+      activeFaultType = "NORMAL";
 
-        // avoid zero / garbage values
-           if (current < 0.05) current = 0;
+      // 🔥 longer stable gap
+      faultHoldTime = Math.floor(Math.random() * 3000) + 2000; // 2–5 sec
+    }
+    else {
 
-          current = parseFloat(current.toFixed(2));
+      // FAULT
+      faultHoldTime = Math.floor(Math.random() * 3000) + 200; // 0.2–3 sec
 
-        // SMOOTH TEMPERATURE 🔥
-         // ===== REALISTIC TEMPERATURE (ULTRA STABLE) 🔥
-            // ===== INDUSTRY LEVEL TEMP MODEL 🔥
-              let ambient = 28;
-              let heating = current * 1.5;
-
-          // very slow thermal inertia
-              let targetTemp = ambient + heating;
-            
-           
-          // very slow thermal response (real transformer behavior)
-            temperature = temperature * 0.95 + targetTemp * 0.05;
-
-          // clamp
-              temperature = Math.max(28, Math.min(temperature, 60));
-
-          // clean
-              temperature = parseFloat(temperature.toFixed(1));
-
-
-        // limit range (no crazy jumps)
-            temperature = Math.max(28, Math.min(temperature, 60));
-
-        // clean display
-            temperature = parseFloat(temperature.toFixed(1));
-
-        // ===== PF LOCK + CLEAN =====
-             pf = Math.min(Math.max(pf, 0.7), 1);
-             pf = parseFloat(pf.toFixed(2));    
-        
-
-        
-        // ===== FAULT INJECTION (70% NORMAL / 30% FAULT) =====
-         if (event <= 70) {
-        // NORMAL (70%)
-         }
-
-          else if (event <= 78) {   // 8%
-           voltage = random(180, 208);
-           current = parseFloat((loadKW * 1000 / (voltage * pf)).toFixed(2)) + 1;
-           temperature += 5;
-           }
-
-          else if (event <= 84) {   // 6%
-           voltage = random(240, 255);
-           current = parseFloat((loadKW * 1000 / (voltage * pf)).toFixed(2)) - 0.5;
-           }
-
-           else if (event <= 89) {   // 5%
-           current = random(8, 10);
-           voltage -= 5;
-           temperature += 8;
-           }
-
-           else if (event <= 93) {   // 4%
-           current = random(11, 14);
-           voltage -= 10;
-           pf -= 0.05;
-           temperature += 15;
-           }
-
-           else if (event <= 96) {   // 3%
-           pf = parseFloat((0.6 + Math.random() * 0.15).toFixed(2));
-           current = parseFloat((loadKW * 1000 / (voltage * pf)).toFixed(2)) + 2;
-           temperature += 10;
-           }
-
-           else if (event <= 98) {   // 2%
-           frequency = random(47, 48.8);
-           voltage -= 5;
-           current += 1;
-           }
-
-           else if (event <= 99) {   // 1%
-           frequency = random(50, 51.1);
-           voltage += 1;
-           current -= 0.5;
-           }
-
-           else {                    // 1% 🔥 SHORT CIRCUIT (RARE)
-           voltage = random(180, 210);
-
-           const scLevel = random(1, 3);
-
-            if (scLevel === 1) current = random(15, 20);
-              else if (scLevel === 2) current = random(20, 35);
-               else current = random(35, 50);
-
-             pf = 0.6;
-             temperature += 20;
-              }
-
-  
-          // PF LIMIT + FORMAT (ADD HERE 🔥)
-           pf = Math.min(Math.max(pf, 0), 1);
-           pf = parseFloat(pf.toFixed(2));
-
-           power = parseFloat((voltage * current * pf).toFixed(1));
-           phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
-
-        // 🔥 NO FORCED STATUS
-      
-          // ===== SENSOR NOISE (REALISTIC BEHAVIOR) =====
-          function noise(val){
-          return val + (Math.random() - 0.5) * 0.5;
-          }
-
-         voltage = parseFloat(noise(voltage).toFixed(2));
-         current = parseFloat(noise(current).toFixed(2));
-
-        updateDashboard();
-      }
+      if (event <= 78) activeFaultType = "LOW VOLTAGE";
+      else if (event <= 84) activeFaultType = "OVER VOLTAGE";
+      else if (event <= 89) activeFaultType = "HIGH CURRENT";
+      else if (event <= 93) activeFaultType = "OVERLOAD";
+      else if (event <= 96) activeFaultType = "LOW POWER FACTOR";
+      else if (event <= 98) activeFaultType = "UNDER FREQUENCY";
+      else if (event <= 99) activeFaultType = "OVER FREQUENCY";
+      else activeFaultType = "SHORT CIRCUIT";
     }
 
-    
-    // ===== FAULT TIMER TRACK =====
-    const currentStatus = evaluateStatus();
+    applyFault(activeFaultType);
+  }
 
-    if (currentStatus !== "SYSTEM HEALTHY") {
+  // ===== LIMITS =====
+  pf = Math.min(Math.max(pf, 0), 1);
 
-      if (!faultStartTime) {
-        faultStartTime = new Date();
+  // ===== FINAL CALC =====
+  power = parseFloat((voltage * current * pf).toFixed(1));
+  phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
+
+  // ===== SENSOR NOISE =====
+  function noise(val) {
+    return val + (Math.random() - 0.5) * 0.5;
+  }
+
+  voltage = parseFloat(noise(voltage).toFixed(2));
+  current = parseFloat(noise(current).toFixed(2));
+
+  updateDashboard();
+
+  // ===== STATUS TRACK =====
+  const currentStatus = evaluateStatus();
+
+  if (currentStatus !== "SYSTEM HEALTHY") {
+    if (!faultStartTime) faultStartTime = new Date();
+  } else {
+    setTimeout(() => {
+      if (evaluateStatus() === "SYSTEM HEALTHY") {
+        faultStartTime = null;
       }
+    }, 200);
+  }
+}
 
-    } else {
 
-      setTimeout(() => {
-        if (evaluateStatus() === "SYSTEM HEALTHY") {
-          faultStartTime = null;
-        }
-      }, 200);
-    }
+function applyFault(type) {
+
+  switch (type) {
+
+    case "NORMAL":
+      voltage = random(220, 235);
+
+      let baseCurrent = (Math.random() * 3 + 1);
+      current = current * 0.8 + baseCurrent * 0.2;
+
+      pf = parseFloat((0.94 + Math.random() * 0.04).toFixed(2));
+      frequency = parseFloat((49.99 + Math.random() * 0.02).toFixed(2));
+
+      temperature -= 2;
+      if (temperature < 30) temperature = 30;
+      break;
+
+    case "LOW VOLTAGE":
+      voltage = random(180, 205);
+      current *= 1.2;
+      temperature += 5;
+      break;
+
+    case "OVER VOLTAGE":
+      voltage = random(240, 260);
+      current *= 0.85;
+      temperature += 2;
+      break;
+
+    case "HIGH CURRENT":
+      current = random(8, 12);
+      temperature += 8;
+      voltage -= 5;
+      break;
+
+    case "OVERLOAD":
+      current = random(10, 14);
+      voltage -= 10;
+      pf -= 0.05;
+      temperature += 15;
+      break;
+
+    case "LOW POWER FACTOR":
+      pf = parseFloat((0.6 + Math.random() * 0.15).toFixed(2));
+      current *= 1.3;
+      temperature += 10;
+      break;
+
+    case "UNDER FREQUENCY":
+      frequency = random(47, 48.8);
+      break;
+
+    case "OVER FREQUENCY":
+      frequency = random(50, 51.1);
+      break;
+
+    case "SHORT CIRCUIT":
+
+      voltage = random(180, 210);
+
+      const scLevel = random(1, 3);
+
+      if (scLevel === 1) current = random(15, 20);
+      else if (scLevel === 2) current = random(20, 35);
+      else current = random(35, 50);
+
+      pf = 0.6;
+      temperature += 20;
+      break;
+  }
+}
   // ==============================================
   // GLOBAL SAVE SETTINGS (CLEAN VERSION)
   // ==============================================
@@ -3752,12 +3834,12 @@ window.togglePass = function() {
   if (!input) return;
 
   if (input.type === "password") {
-    input.type = "text";
-    if (icon) icon.innerText = "🙈";
-  } else {
-    input.type = "password";
-    if (icon) icon.innerText = "👁";
-  }
+  input.type = "text";
+  icon.innerHTML = '<i class="fas fa-eye-slash"></i>';
+} else {
+  input.type = "password";
+  icon.innerHTML = '<i class="fas fa-eye"></i>'; // pro show
+}
 };
 
   window.logoutAccess = function () {
@@ -3782,12 +3864,12 @@ window.togglePass = function() {
     const icon = document.getElementById("adminEye");
 
     if (input.type === "password") {
-      input.type = "text";
-      icon.innerText = "🙈";  // hide
-    } else {
-      input.type = "password";
-      icon.innerText = "👁";  // show
-    }
+  input.type = "text";
+  icon.innerHTML = '<i class="fas fa-eye-slash"></i>';
+} else {
+  input.type = "password";
+  icon.innerHTML = '<i class="fas fa-eye"></i>'; // pro show
+}
   }
 
 
