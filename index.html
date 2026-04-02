@@ -102,27 +102,33 @@
 <!-- ================= TOP RIGHT STATUS (LEFT OF BUZZER) ================= -->
 <div style="
 position:absolute;
-right:120px;
-top:20px;
+right:130px;
+top:25px;
 display:grid;
 grid-template-columns:auto auto auto;
-row-gap:6px;
+row-gap:6.5px;
 column-gap:6px;
 font-size:13px;
 align-items:center;
 ">
 
-  <b>🖥 Dashboard Mode</b>
+   <b><i class="fas fa-desktop"></i> Dashboard Mode</b>
   <b>:</b>
   <span id="modeLabel">Admin Mode</span>
 
-  <b>📡 Sync Devices</b>
+  <b><i class="fas fa-signal"></i> Sync Devices</b>
   <b>:</b>
   <span id="deviceCount">0</span>
 
-  <b>⚙ System Mode</b>
+  <b><i class="fas fa-cogs"></i> System Mode</b>
   <b>:</b>
   <span id="systemModeLabel">Simulation</span>
+
+  <!-- 🔥 NEW -->
+  <b><i class="fas fa-database"></i> Storage Used</b>
+  <b>:</b>
+  <span id="storageUsed">0%</span>
+
 
 </div>
 
@@ -152,7 +158,7 @@ align-items:center;
   <!-- ✅ FIXED STATUS CARD -->
   <div class="card status normal" id="statusCard">
     <h3>Status</h3>
-    <p id="statusText">SYSTEM HEALTHY</p>
+    <p id="statusText" class="status-text">SYSTEM HEALTHY</p>
   </div>
 
   <div class="card purple">

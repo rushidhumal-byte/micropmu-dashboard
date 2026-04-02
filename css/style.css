@@ -41,35 +41,65 @@ h1{
 .cards{
   display:grid;
   grid-template-columns:repeat(7, 1fr);
-  gap:15px;
+  gap:14px;
   margin-bottom:20px;
 }
 
+/* 🔥 FIXED CARD (NO HEIGHT CHANGE EVER) */
 body:not(.energy-page) .card{
-  height:90px;           /* 🔥 FIXED HEIGHT */
-  padding:14px;
+  height:100px !important;
+  padding:10px 12px;
   border-radius:12px;
   text-align:center;
-  font-size:18px;
 
   display:flex;
   flex-direction:column;
+
   justify-content:center;
+  align-items:center;
 
+  overflow:hidden;
 }
 
-.card:hover{
-  transform:translateY(-2px);
-}
-
+/* 🔥 TITLE */
 .card h3{
-  font-size:13px;
-  margin-bottom:6px;
+  font-size:14px;
+  margin-bottom:4px;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
+/* 🔥 NORMAL VALUES (ALL CARDS SAME) */
 .card p{
   font-size:18px;
   font-weight:bold;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* 🔥 STATUS CARD SPECIAL (2 LINE FIT INSIDE BOX) */
+.card p.status-text{
+  font-size:18px;   /* 🔥 SAME SIZE 유지 */
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  text-align:center;
+
+  line-height:1.1;
+
+  height:40px;         /* 🔥 FIXED SPACE FOR 2 LINES */
+  max-height:40px;
+
+  overflow:hidden;
+
+  word-break:break-word;
+  white-space:normal !important;
 }
 
 #modeLabel, #deviceCount, #systemModeLabel{
@@ -132,12 +162,105 @@ body:not(.energy-page) .card{
 /* =====================================
    CARD COLORS
 ===================================== */
-.blue{ background:linear-gradient(135deg,#f97316,#ea580c); }
-.green{ background:linear-gradient(135deg,#134e5e,#71b280); }
-.orange{ background:linear-gradient(135deg,#f7971e,#ffd200); color:#000; }
-.purple{ background:linear-gradient(135deg,#42275a,#734b6d); }
-.cyan{ background:linear-gradient(135deg,#0891b2,#06b6d4); }
-.red{ background:linear-gradient(135deg,#7f1d1d,#ef4444); }
+.card{
+  border-radius:16px;
+  padding:16px;
+  box-shadow:
+    inset 0 0 12px rgba(0,0,0,0.25),
+    0 6px 20px rgba(0,0,0,0.15);
+  backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
+}
+
+/* Hover effect (optional but sexy 🔥) */
+.card:hover{
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 0 14px rgba(0,0,0,0.3),
+    0 10px 25px rgba(0,0,0,0.25);
+}
+
+/* 🔵 BLUE */
+.blue{
+  background: linear-gradient(
+    135deg,
+    rgba(59,130,246,0.95) 0%,
+    rgba(30,58,138,0.9) 70%,
+    rgba(30,58,138,0.7) 100%
+  );
+}
+
+/* 🟢 GREEN */
+.green{
+  background: linear-gradient(
+    135deg,
+    rgba(16,185,129,0.95) 0%,
+    rgba(4,120,87,0.9) 70%,
+    rgba(4,120,87,0.7) 100%
+  );
+}
+
+/* 🟠 ORANGE */
+.orange{
+  background: linear-gradient(
+    135deg,
+    rgba(251,146,60,0.95) 0%,
+    rgba(234,88,12,0.9) 70%,
+    rgba(234,88,12,0.7) 100%
+  );
+  color:#000;
+}
+
+/* 🟣 PURPLE */
+.purple{
+  background: linear-gradient(
+    135deg,
+    rgba(139,92,246,0.95) 0%,
+    rgba(109,40,217,0.9) 70%,
+    rgba(109,40,217,0.7) 100%
+  );
+}
+
+/* 🔷 CYAN */
+.cyan{
+  background: linear-gradient(
+    135deg,
+    rgba(6,182,212,0.95) 0%,
+    rgba(14,116,144,0.9) 70%,
+    rgba(14,116,144,0.7) 100%
+  );
+}
+
+/* 🔴 RED */
+.red{
+  background: linear-gradient(
+    135deg,
+    rgba(239,68,68,0.95) 0%,
+    rgba(185,28,28,0.9) 70%,
+    rgba(185,28,28,0.7) 100%
+  );
+}
+
+/* 🔵 INDIGO */
+.indigo{
+  background: linear-gradient(
+    135deg,
+    rgba(99,102,241,0.95) 0%,
+    rgba(55,48,163,0.9) 70%,
+    rgba(55,48,163,0.7) 100%
+  );
+}
+
+/* 🟡 GOLD */
+.gold{
+  background: linear-gradient(
+    135deg,
+    rgba(250,204,21,0.95) 0%,
+    rgba(202,138,4,0.9) 70%,
+    rgba(202,138,4,0.7) 100%
+  );
+  color:#000;
+}
 
 /* =====================================
    STATUS STYLE
@@ -185,10 +308,26 @@ body:not(.energy-page) .card{
   border:none;
 }
 
-.phase-r{ background:red; }
-.phase-y{ background:yellow; }
-.phase-b{ background:#38bdf8; }
+/* 🔴 R Phase = FILLED */
+.phase-r{
+  background:red;
+  border:none;
+}
 
+/* 🟡 Y Phase = BORDER ONLY */
+.phase-y{
+  background:transparent;
+  border:1.5px solid yellow;
+}
+
+/* 🔵 B Phase = BORDER ONLY */
+.phase-b{
+  background:transparent;
+  border:1.5px solid #38bdf8;
+}
+.phase-dot{
+  box-shadow:0 0 4px rgba(255,255,255,0.3);
+}
 /* =====================================
    CHARTS
 ===================================== */
@@ -207,10 +346,11 @@ body:not(.energy-page) .card{
   box-shadow:0 4px 15px rgba(0,0,0,0.5);
 }
 
-canvas{
-  height:260px !important;
+.chart-box canvas,
+.graph-box canvas{
+  width:100% !important;
+  height:100% !important;
 }
-
 
 
 /* =====================================
@@ -218,13 +358,20 @@ canvas{
 ===================================== */
 #phasorCanvas{
   width:100% !important;
-  max-width:300px;
-  aspect-ratio:1/1;
- background:#020617;
-  border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.5);
-}
+  max-width:350px;
+  
 
+  height:260px !important;   /* 🔥 yaha adjust kar (150–200 best) */
+
+  /* ❌ aspect-ratio hata de (conflict ho raha tha) */
+  
+  background:#020617;
+  border-radius:5px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
+
+  display:block;
+  margin:auto;
+}
 
 
 /* =====================================
@@ -232,8 +379,8 @@ canvas{
 ===================================== */
 .buzzer-box{
   position:absolute;
-  right:30px;
-  top:20px;
+  right:42px;
+  top:30px;
   font-size:22px;
   cursor:pointer;
   background:#020617;
@@ -264,6 +411,7 @@ canvas{
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
+  
   gap: 15px;
   min-height: 200px;
 }
@@ -294,39 +442,233 @@ min-height:auto;
   background:#22c55e;
   transition:0.4s;
 }
+/* ================================================= */
+/* 🔥 FINAL EXPORT PAGE (NO CONFLICT - ISOLATED CSS) */
+/* ================================================= */
 
-/* =====================================
-   EXPORT PANEL
-===================================== */
-.export-panel{
-  background:#020617;
-  padding:20px;
+/* 🔥 FULL WIDTH STACK LAYOUT */
+body.export-page .export-layout{
+  display:flex;
+  flex-direction:column;
+  gap:25px;
+  margin-top:20px;
+}
+
+/* LEFT + RIGHT FULL WIDTH */
+body.export-page .export-left,
+body.export-page .export-right{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+/* ================= STATUS STRIP ================= */
+body.export-page .health-box{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:20px;
+
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-left:4px solid #eab308;
+
+  padding:18px 22px;
   border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.5);
-  margin-bottom:20px;
+
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.6),
+    inset 0 0 10px rgba(255,255,255,0.05);
+}
+
+/* ================= EXPORT PANEL ================= */
+body.export-page .export-panel{
+  background:linear-gradient(135deg,#020617,#0f172a);
+  padding:20px;
+  border-radius:16px;
+
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+  gap:20px;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.6),
+    inset 0 0 10px rgba(255,255,255,0.03);
+}
+
+/* 🔥 FIX GRID HEADING */
+body.export-page .export-panel h2{
+  grid-column:1/-1;
+  font-size:18px;
+  margin-bottom:8px;
+}
+
+/* ================= EXPORT CARD ================= */
+body.export-page .export-card{
+  background:linear-gradient(145deg,#020617,#0f172a);
+  padding:18px;
+  border-radius:14px;
+
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+
+  border:1px solid rgba(255,255,255,0.05);
+  transition:all 0.25s ease;
+
+  min-height:170px;
+}
+
+body.export-page .export-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 25px rgba(0,0,0,0.7);
+  border-color:#38bdf8;
+}
+
+/* ================= INPUT ================= */
+body.export-page .export-card input,
+body.export-page .export-card select{
+  width:100%;
+  height:38px;
+
+  padding:0 10px;
+
+  border-radius:8px;
+  border:1px solid #1e293b;
+
+  background:#020617;
+  color:#e2e8f0;
+}
+
+body.export-page .export-card input:focus,
+body.export-page .export-card select:focus{
+  border:1px solid #38bdf8;
+  box-shadow:0 0 6px rgba(56,189,248,0.4);
+}
+
+/* ================= BUTTON ================= */
+body.export-page .export-card button{
+  height:40px;
+
+  border-radius:10px;
+  border:none;
+
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#fff;
+
+  font-size:13px;
+  font-weight:500;
+
+  cursor:pointer;
+  transition:0.25s;
+}
+
+body.export-page .export-card button:hover{
+  transform:translateY(-2px);
+}
+
+/* ================= SPECIAL BUTTON COLORS ================= */
+body.export-page button[onclick*="PDF"]{
+  background:linear-gradient(135deg,#9333ea,#7e22ce);
+}
+
+body.export-page button[onclick*="Billing"]{
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+}
+
+/* ================= TIMELINE ================= */
+body.export-page #timelinePanel{
+  max-height:260px;
+  overflow-y:auto;
+
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-radius:12px;
+
+  padding:12px;
+
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+body.export-page #timelineList div{
+  padding:4px 0;
+  font-size:13px;
+}
+
+/* ================= POWER STATS ================= */
+body.export-page .stats-row{
+  display:flex;
+  flex-wrap:wrap;
   gap:15px;
 }
 
-/* =====================================
-   BUTTONS
-===================================== */
-input,button{
-  border-radius:6px;
-  border:none;
+body.export-page .cardStat{
+  flex:1 1 30%;
+  background:#020617;
+  padding:12px;
+  border-radius:10px;
+  text-align:center;
+
+  border:1px solid rgba(255,255,255,0.05);
 }
 
-button:not(.save-btn):hover{
-  background:#1d4ed8;
+body.export-page .cardStat h2{
+  color:#38bdf8;
 }
 
-.save-btn{
-  background:#22c55e;
-  color:black;
-  font-weight:bold;
+/* ================= CHART ================= */
+body.export-page .chart-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;  /* 🔥 Pie LEFT + Trend RIGHT */
+  gap:20px;
 }
 
+/* Mobile pe stack ho jayega */
+@media(max-width:900px){
+  body.export-page .chart-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+body.export-page .chart-box{
+  width:100%;
+  height:300px;   /* 🔥 equal height */
+}
+
+body.export-page .graph-box{
+  width:100%;
+  height:300px;   /* 🔥 equal height */
+}
+
+/* ================= GRAPH CONTROLS ================= */
+body.export-page .graph-controls{
+  display:grid;
+  grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+  gap:10px;
+}
+/* ================= AI REPORT ================= */
+body.export-page #aiReportBox{
+  min-height:140px;
+  font-size:14px;
+  line-height:1.6;
+}
+
+/* ================= MOBILE ================= */
+@media(max-width:900px){
+
+  body.export-page .export-layout{
+    flex-direction:column;
+  }
+
+  body.export-page .chart-grid{
+    grid-template-columns:1fr;   /* 🔥 correct */
+  }
+
+  body.export-page .stats-row{
+    flex-direction:column;
+  }
+
+}
 
 /* =====================================
    MOBILE
@@ -656,6 +998,31 @@ img{
   font-weight:600;
 }
 
+/* 🔥 Storage Used */
+#storageUsed{
+  color:#38bdf8;   /* blue */
+  font-weight:600;
+}
+
+
+/* 🔴 RED COLOR */
+.storage-red {
+  color: #ef4444;
+}
+
+/* ⚡ BLINK ANIMATION */
+@keyframes slowBlink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.storage-blink {
+  animation: slowBlink 1.2s infinite;
+}
+
+
+
 /* ===== LABELS ===== */
 .health-box span{
   color:#94a3b8;
@@ -680,6 +1047,41 @@ img{
 }
 
 /* ===== PERFORMANCE PAGE ===== */
+
+
+
+/* 🔥 PERFORMANCE PAGE SAME AS DASHBOARD */
+.performance-page .cards{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:14px;
+}
+
+/* 🔥 SAME FIXED CARD */
+.performance-page .card{
+  height:100px !important;
+  padding:10px 12px;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+
+  text-align:center;
+  border-radius:12px;
+
+  overflow:hidden;
+}
+
+/* 🔥 HUMIDITY UNIQUE COLOR */
+.indigo{
+  background:linear-gradient(135deg,#3730a3,#6366f1);
+}
+
+.gold{
+  background:linear-gradient(135deg,#b45309,#facc15);
+  color:#000;
+}
 
 /*====SYSTEM MODE=====*/
 #perfMode{
@@ -1107,6 +1509,12 @@ body.app-page .card label{
 
 .export-row label{
   min-width:90px;
+}
+
+body.export-page .export-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
 }
 
 .export-panel{
@@ -1917,4 +2325,189 @@ body.pdf-mode #bill {
 #adminEye:hover i{
   color:#38bdf8;
   transform:scale(1.2);
+}
+
+
+
+
+/* ================================================= */
+/* 🔒 EXPORT PAGE ONLY (NO GLOBAL EFFECT) */
+/* ================================================= */
+
+body.export-page .health-box{
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-left:4px solid #eab308;
+
+  box-shadow:
+    0 0 15px rgba(0,0,0,0.6),
+    inset 0 0 10px rgba(99,102,241,0.1);
+
+  backdrop-filter:blur(8px);
+}
+
+/* ===== STATUS ===== */
+body.export-page #reportRecords{
+  font-size:16px;
+  font-weight:bold;
+  color:#22c55e;
+}
+
+/* ===== TIMELINE ===== */
+body.export-page #timelinePanel{
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-radius:12px;
+
+  box-shadow:
+    inset 0 0 12px rgba(0,0,0,0.4),
+    0 0 10px rgba(0,0,0,0.3);
+
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+body.export-page #timelinePanel b{
+  color:#38bdf8;
+}
+
+body.export-page #timelineList div{
+  text-align:left;
+  width:100%;
+  padding:4px 0;
+}
+
+/* ===== EXPORT PANEL ===== */
+body.export-page .export-panel{
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-radius:16px;
+
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.6),
+    inset 0 0 10px rgba(255,255,255,0.03);
+
+  backdrop-filter:blur(8px);
+}
+
+/* ===== INPUT ===== */
+body.export-page .export-panel input,
+body.export-page .export-panel select{
+  background:#020617;
+  border:1px solid #1e293b;
+  color:#fff;
+
+  height:38px;
+  padding:0 10px;
+  border-radius:8px;
+}
+
+body.export-page .export-panel input:focus,
+body.export-page .export-panel select:focus{
+  border:1px solid #38bdf8;
+  box-shadow:0 0 6px #38bdf8;
+}
+
+/* ===== BUTTON ===== */
+body.export-page .export-panel button{
+  height:40px;
+  padding:0 14px;
+
+  border-radius:10px;
+  border:none;
+
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#fff;
+
+  font-size:13px;
+  font-weight:500;
+
+  display:flex;
+  align-items:center;
+  gap:6px;
+
+  transition:0.25s;
+}
+
+body.export-page .export-panel button:hover{
+  transform:translateY(-2px);
+}
+
+/* ===== BUTTON TYPES ===== */
+body.export-page button[onclick*="PDF"]{
+  background:linear-gradient(135deg,#9333ea,#7e22ce);
+}
+
+body.export-page button[onclick*="CSV"]{
+  background:linear-gradient(135deg,#059669,#047857);
+}
+
+body.export-page button[onclick*="Billing"]{
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+}
+
+/* ===== CHARTS ===== */
+body.export-page .export-charts{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  margin-top:20px;
+}
+
+body.export-page .export-chart-box{
+  background:#020617;
+  padding:15px;
+  border-radius:12px;
+
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+
+  height:260px;
+}
+
+/* ===== HEATMAP ===== */
+body.export-page #heatmap{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:4px;
+  margin-top:10px;
+}
+
+body.export-page .heat-cell{
+  height:18px;
+  border-radius:3px;
+  background:#1e293b;
+}
+
+body.export-page .heat-low{ background:#22c55e; }
+body.export-page .heat-mid{ background:#f59e0b; }
+body.export-page .heat-high{ background:#ef4444; }
+
+/* ===== AI REPORT ===== */
+body.export-page .ai-report{
+  margin-top:20px;
+
+  background:linear-gradient(135deg,#020617,#0f172a);
+  border-left:4px solid #38bdf8;
+
+  padding:15px;
+  border-radius:12px;
+
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+}
+
+body.export-page .ai-report h3{
+  color:#38bdf8;
+}
+
+body.export-page .ai-report p{
+  font-size:13px;
+  color:#cbd5e1;
+}
+
+/* ===== MOBILE ===== */
+@media(max-width:768px){
+  body.export-page .export-charts{
+    grid-template-columns:1fr;
+  }
+}
+
+.export-page #reportRecords{
+  font-size:16px;
+  letter-spacing:1px;
 }

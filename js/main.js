@@ -3,6 +3,34 @@
 **********************************/
 
 /* ================= GLOBAL STATE ================= */
+
+/* ================= GETTING SYSTEM DATA ================= */
+
+
+function getSystemData(){
+
+  const mode = getSystemMode();
+
+  // ===== ESP MODE =====
+  if(mode === "esp"){
+    return [{
+      voltage, current, frequency, power, pf,
+      temperature, humidity,
+      status: evaluateStatus(),
+      timestamp: Date.now()
+    }];
+  }
+
+  // ===== CSV MODE =====
+  if(mode === "hybrid"){
+    return window.analysisDataset || [];
+  }
+
+  // ===== SIMULATION =====
+  return JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+}
+
+
 /* ===== FINAL SYSTEM LIMITS ===== */
 const deviceId = localStorage.getItem("deviceId") || ("dev_" + Math.random().toString(36).substr(2, 9));
 localStorage.setItem("deviceId", deviceId);
@@ -34,11 +62,12 @@ let frequency = 50;
 let power = 0;
 let pf = 0.95;
 let temperature = 35;
+let humidity = 50;
 let phaseAngle = 0;
 let energy = 0;
 let lastEnergyTime = Date.now();
 let isFetching = false;
-
+let loggingEnabled = true;
 
 let buzzerMuted = false;
 let buzzerPlaying = false;
@@ -63,7 +92,31 @@ let accessMode = "";
   let faultCooldownTime = 0;
   let forceNormalAfterFault = false;
 let recoveryCounter = 0;
+let lastUIRender = 0;
 
+window.voltage = 230;
+window.current = 2;
+window.power = 500;
+window.frequency = 50;
+window.pf = 0.95;
+
+
+function syncGlobalData(){
+
+  window.voltage = Number(voltage);
+  window.current = Number(current);
+  window.power = Number(power);
+  window.frequency = Number(frequency);
+  window.pf = Number(pf);
+
+}
+
+function safeUIUpdate(){
+  if(Date.now() - lastUIRender < 300) return;
+  lastUIRender = Date.now();
+
+  updateDashboard();
+}
 
 
 // ===== ML HISTORY + DYNAMIC LIMITS =====
@@ -144,6 +197,7 @@ window.submitAccess = function() {
     const popup = document.getElementById("accessPopup");
     popup.style.display = "none";
     popup.style.opacity = "0";
+    popup.style.pointerEvents = "none"; 
 
     return;
   }
@@ -351,6 +405,31 @@ if (pf < 0.98) {
   current = parseFloat(current.toFixed(2));
   voltage = parseFloat(voltage.toFixed(2));
   temperature = parseFloat(temperature.toFixed(1));
+
+  // ================= HUMIDITY FINAL ENGINE =================
+if (typeof humidity !== "number") {
+  humidity = 50;
+}
+
+// temperature effect
+if (temperature > 45) humidity -= 2;
+if (temperature < 30) humidity += 1;
+
+// load effect
+if (current > 8) humidity -= 1;
+
+// day/night effect
+let hour = new Date().getHours();
+if (hour >= 18 || hour <= 6) humidity += 2;
+
+// random fluctuation
+humidity += (Math.random() - 0.5) * 2;
+
+// limits
+humidity = Math.max(30, Math.min(70, humidity));
+
+// clean value
+humidity = parseFloat(humidity.toFixed(1));
 }
 
 
@@ -365,13 +444,31 @@ function applyFault(type) {
   let baseCurrent = (Math.random() * 3 + 1);
   current = current * 0.8 + baseCurrent * 0.2;
 
-  pf = parseFloat((0.92 + Math.random() * 0.05).toFixed(2));
+  let rand = Math.random();
+
+if(rand < 0.7){
+  // 🔴 lagging (70%)
+  pf = parseFloat((0.85 + Math.random() * 0.1).toFixed(2));
+  pf = Math.min(Math.max(pf, 0.01), 1);
+  phaseAngle = Math.acos(pf) * DEG;
+}
+else if(rand < 0.9){
+  // 🔵 leading (20%)
+  pf = parseFloat((0.85 + Math.random() * 0.1).toFixed(2));
+  pf = Math.min(Math.max(pf, 0.01), 1);
+  phaseAngle = -Math.acos(pf) * DEG;
+}
+else{
+  // ⚪ unity (10%)
+  pf = 1;
+  phaseAngle = 0;
+}
 
   frequency = parseFloat((49.99 + Math.random() * 0.02).toFixed(2));
 
   // 🔥 cooling
   temperature -= 2;
-  if (temperature < 30) temperature = 30;
+  if (temperature < 30) temperature = 25;
 
   break;
 
@@ -454,7 +551,22 @@ function applyFault(type) {
       pf = parseFloat((0.7 + Math.random() * 0.2).toFixed(2));
       temperature = random(35, 45);
       break;
-  }
+
+}
+
+  /* =========================
+   PF → PHASE ANGLE LINK
+========================= */
+pf = Math.min(Math.max(pf, 0.01), 1);
+phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
+
+/* =========================
+   OPTIONAL: LEADING PF (20% chance)
+========================= */
+if(Math.random() < 0.2){
+  phaseAngle = -phaseAngle; // 🔵 leading
+}
+
 }
 
 /* ================= SETTINGS ================= */
@@ -625,33 +737,53 @@ function updateSystemModeUI() {
 
 
 // limit size (important)
-if(history.length > 30){
+if(history.length > 50){
   history.shift();
 }
 
 }
+
+function broadcastUpdate(){
+
+  localStorage.setItem("micropmu_sync", Date.now());
+}
+
+
+
+function detectVoltageTrend(){
+
+  if(history.length < 5) return "Stable";
+
+  let first = history[0].voltage;
+  let last = history[history.length-1].voltage;
+
+  if(last - first > 10) return "Rising ⚡";
+  if(first - last > 10) return "Dropping ⚠";
+  return "Stable";
+}
+
 /* ==================================================== */
 /* ================= DASHBOARD UPDATE ================= */
 /* ==================================================== */
 function updateDashboard(forcedStatus = null) {
 
-    let level = "NORMAL";
-    let color = "#22c55e";
+  let level = "NORMAL";
+  let color = "#22c55e";
 
   const status = forcedStatus || evaluateStatus();
 
-// ===== AI HISTORY UPDATE (FIXED) =====
-history.push({
-  voltage,
-  current,
-  frequency,
-  pf,
-  temperature
-});
+  // ===== AI HISTORY UPDATE =====
+  history.push({
+    voltage,
+    current,
+    frequency,
+    pf,
+    temperature
+  });
 
-if(history.length > 30){
-  history.shift();
-}
+  if(history.length > 50){
+    history.shift();
+  }
   
   // ===== FAULT DURATION =====
   if (faultStartTime) {
@@ -682,27 +814,81 @@ if(history.length > 30){
     else liveModeEl.innerText = "Simulation";
   }
 
-  // ===== VALUES =====
-  if (document.getElementById("v")) {
-    document.getElementById("v").innerText = voltage + " V";
-    document.getElementById("c").innerText = current + " A";
-    document.getElementById("f").innerText = frequency + " Hz";
-    document.getElementById("p").innerText = power + " W";
-    document.getElementById("pfVal").innerText = pf.toFixed(2);
+  // ===== VALUES (SAFE FIX - NO BLOCK DEPENDENCY) =====
+  const vEl = document.getElementById("v");
+  if (vEl) vEl.innerText = voltage + " V";
 
-    const pfPerf = document.getElementById("pfPerf");
-    if (pfPerf) {
-      pfPerf.innerText = pf;
-    }
+  const cEl = document.getElementById("c");
+  if (cEl) cEl.innerText = current + " A";
 
-    document.getElementById("temp").innerText = temperature.toFixed(1) + " °C";
+  const fEl = document.getElementById("f");
+  if (fEl) fEl.innerText = frequency + " Hz";
+
+  const pEl = document.getElementById("p");
+  if (pEl) pEl.innerText = power + " W";
+
+  const pfEl = document.getElementById("pfVal");
+  if (pfEl) pfEl.innerText = pf.toFixed(2);
+
+  // ===== Temperature =====
+  const tempEl = document.getElementById("temp");
+  if (tempEl) {
+    tempEl.innerText = temperature.toFixed(1) + " °C";
   }
 
-  // ===== PERFORMANCE =====
+  // ===== PERFORMANCE (FIXED IDs MATCH YOUR HTML) =====
+
+  // Phase Angle
   const phaseEl = document.getElementById("phaseAngleVal");
   if (phaseEl) {
     phaseEl.innerText = phaseAngle + "°";
   }
+
+  // Load Demand ✅ FIXED
+  const loadEl = document.getElementById("load");
+  if (loadEl) {
+    const loadKW = power / 1000;
+    loadEl.innerText = loadKW.toFixed(2) + " kW";
+  }
+
+  // Energy ✅ FIXED
+  const energyEl = document.getElementById("energy");
+  if (energyEl) {
+    energyEl.innerText = energy.toFixed(3) + " kWh";
+  }
+
+  // Efficiency ✅ FIXED
+  const effEl = document.getElementById("efficiency");
+  if (effEl) {
+    let efficiency = Math.max(0, Math.min(100, pf * 100));
+    effEl.innerText = efficiency.toFixed(1) + " %";
+  }
+
+  // Frequency Stability ✅ FIXED
+  const freqEl = document.getElementById("freqStability");
+  if (freqEl) {
+    let stability = 100 - Math.abs(frequency - 50) * 20;
+    stability = Math.max(0, Math.min(100, stability));
+    freqEl.innerText = stability.toFixed(0) + "%";
+  }
+
+  // Voltage Stability ✅ FIXED (vsi)
+  const voltEl = document.getElementById("vsi");
+  if (voltEl) {
+    let stability = 100 - Math.abs(voltage - 230) * 2;
+    stability = Math.max(0, Math.min(100, stability));
+    voltEl.innerText = stability.toFixed(0) + "%";
+  }
+
+  // Humidity
+  const humidityEl = document.getElementById("humidityVal");
+  if (humidityEl) {
+    if (typeof humidity !== "number" || isNaN(humidity)) {
+      humidity = 50;
+    }
+    humidityEl.innerText = humidity.toFixed(1) + " %";
+  }
+
 
   
   // ===== STATUS CARD =====
@@ -857,6 +1043,19 @@ if (strip) {
     }
    
   }
+
+  window.addEventListener("storage", (e) => {
+  if(e.key === "micropmu_sync"){
+    updateDashboard();
+    generateAIReport(); 
+
+    // export page ho toh hi run hoga (safe)
+    if(typeof updateExportPage === "function"){
+      updateExportPage();
+    }
+  }
+});
+
 /************* AI BUTTON + INIT *******************/
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -1029,7 +1228,12 @@ if(rateEl){
             label: "Voltage",
             data: [],
             borderColor: "#38bdf8",
-            tension: 0.3
+            tension: 0.3,
+            
+            pointRadius: 1,
+            borderWidth: 2,
+            fill: false
+
           }]
         }
       }
@@ -1128,8 +1332,7 @@ if(rateEl){
   }
 
 
-
- window.drawPhasor = function(){
+window.drawPhasor = function(){
 
   const canvas = document.getElementById("phasorCanvas");
   if (!canvas) return;
@@ -1138,61 +1341,232 @@ if(rateEl){
 
   const w = canvas.width;
   const h = canvas.height;
+
   const cx = w / 2;
-  const cy = h / 2;
-  const radius = 100;
+  const shiftUp = 15;  // 🔥 jitna upar lena hai (10–25 try kar)
+const cy = (h / 2) - shiftUp;
+
+  /* 🔥 responsive radius */
+  const radius = Math.min(w, h) * 0.35;
 
   ctx.clearRect(0, 0, w, h);
 
-  // circle
+  ctx.lineWidth = 2;
+
+  /* =========================
+     AXES (REFERENCE)
+  ========================= */
+  ctx.strokeStyle = "#1e293b";
+  ctx.lineWidth = 1;
+
+  // horizontal
+  ctx.beginPath();
+  ctx.moveTo(cx - radius, cy);
+  ctx.lineTo(cx + radius, cy);
+  ctx.stroke();
+
+  // vertical
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - radius);
+  ctx.lineTo(cx, cy + radius);
+  ctx.stroke();
+
+  /* =========================
+     OUTER CIRCLE
+  ========================= */
   ctx.strokeStyle = "#334155";
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
 
-  // voltage reference (red)
-  ctx.strokeStyle = "#f62727";
+  /* =========================
+     VOLTAGE (REFERENCE)
+  ========================= */
+  ctx.strokeStyle = "#f87171";
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(cx + radius, cy);
   ctx.stroke();
 
-  // current phasor (green)
+  /* label V */
+  ctx.fillStyle = "#f87171";
+  ctx.font = "12px sans-serif";
+  ctx.fillText("V", cx + radius + 6, cy + 4);
+
+
+  /*=========================
+   VOLTAGE ARROW
+   =========================*/
+
+   const vArrowSize = 8;
+
+ctx.beginPath();
+ctx.moveTo(cx + radius, cy);
+
+ctx.lineTo(cx + radius - vArrowSize, cy - vArrowSize / 2);
+ctx.lineTo(cx + radius - vArrowSize, cy + vArrowSize / 2);
+
+ctx.closePath();
+ctx.fillStyle = "#f87171";
+ctx.fill();
+
+  /* =========================
+     CURRENT PHASOR
+  ========================= */
   const angle = phaseAngle * Math.PI / 180;
 
-  ctx.strokeStyle = "#26f50e";
+  ctx.strokeStyle = "#4ade80";
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + radius * Math.cos(angle), cy - radius * Math.sin(angle));
+  ctx.lineTo(
+    cx + radius * Math.cos(angle),
+    cy - radius * Math.sin(angle)
+  );
   ctx.stroke();
+
+  /* label I */
+  ctx.fillStyle = "#4ade80";
+  ctx.fillText(
+    "I",
+    cx + radius * Math.cos(angle) + 6,
+    cy - radius * Math.sin(angle)
+  );
+
+  /* =========================
+   ARROW HEAD (CURRENT)
+========================= */
+const arrowSize = 8;
+
+const endX = cx + radius * Math.cos(angle);
+const endY = cy - radius * Math.sin(angle);
+
+ctx.beginPath();
+ctx.moveTo(endX, endY);
+
+ctx.lineTo(
+  endX - arrowSize * Math.cos(angle - Math.PI / 6),
+  endY + arrowSize * Math.sin(angle - Math.PI / 6)
+);
+
+ctx.lineTo(
+  endX - arrowSize * Math.cos(angle + Math.PI / 6),
+  endY + arrowSize * Math.sin(angle + Math.PI / 6)
+);
+
+ctx.closePath();
+ctx.fillStyle = "#4ade80";
+ctx.fill();
+
+/* =========================
+   ANGLE SECTOR (FILL)
+========================= */
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.arc(cx, cy, radius * 0.5, 0, -angle, true);
+ctx.closePath();
+
+ctx.fillStyle = "rgba(56,189,248,0.15)"; // 🔥 soft blue fill
+ctx.fill();
+
+  /* =========================
+     ANGLE ARC (PF ANGLE)
+  ========================= */
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.5, 0, -angle, true);
+  ctx.stroke();
+
+ /* 🔥 angle text near current phasor */
+ctx.fillStyle = "#38bdf8";
+
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+/* 🔥 position (auto based on angle) */
+let textX = cx + (radius + 20) * Math.cos(angle);
+let textY = cy - (radius + 20) * Math.sin(angle);
+
+/* 🔥 manual adjustments (yaha se control kar) */
+const offsetX = 20;   // ➡️ right (+) / left (-)
+const offsetY = 5;   // ⬇️ down (+) / up (-)
+
+/* apply offset */
+textX += offsetX;
+textY += offsetY;
+
+ctx.fillText(
+  "θ = " + phaseAngle.toFixed(1) + "°",
+  textX,
+  textY
+);
+
+  /* =========================
+     CENTER POINT
+  ========================= */
+  ctx.fillStyle = "#94a3b8";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* =========================
+     PF TYPE (Lag/Lead)
+  ========================= */
+  ctx.fillStyle = "#cbd5f5";
+  ctx.font = "12px sans-serif";
+
+  let pfType = "Unity";
+
+if (phaseAngle > 0) pfType = "Lagging";
+else if (phaseAngle < 0) pfType = "Leading";
+else pfType = "Unity";
+
+  const pfOffsetY = -4;  // 🔥 FOR UP PUT NEGATIVE VALUE 
+  
+
+ctx.fillText(
+  "PF: " + pfType,
+  cx - 3,
+  cy + radius + 20 + pfOffsetY
+);
 };
 
-  setInterval(updateWiFiStatus, 2000);
+ /* setInterval(updateWiFiStatus, 2000);
 
 
   /* ================= GLOBAL GRAPH UPDATE ================= */
 
   function startGraphEngine() {
 
-  if (graphTimer) clearInterval(graphTimer);
+  // 🔥 ALWAYS CLEAR OLD TIMER (ONLY ONCE)
+  if (graphTimer) {
+    clearInterval(graphTimer);
+    graphTimer = null;
+  }
 
   const settings = getSettings();
 
-  // 🔥 AUTO REFRESH OFF
+  // ===== AUTO REFRESH OFF =====
   if (settings.autoRefresh === "off") {
-    console.log("Graph Auto Refresh OFF");
+    console.log("📊 Graph OFF");
     return;
   }
 
+  const rate = parseInt(settings.samplingRate) || 1000;
+
+  console.log("📊 Graph Rate:", rate);
+
+  // 🔥 START NEW TIMER
   graphTimer = setInterval(() => {
 
-    /* ===== Dashboard ===== */
+    // ===== DASHBOARD =====
     if (dashboardCharts.voltage) {
       pushData(dashboardCharts.voltage, voltage);
       pushData(dashboardCharts.current, current);
     }
 
-    /* ===== Live ===== */
+    // ===== LIVE =====
     if (liveCharts.liveVoltage) {
       pushData(liveCharts.liveVoltage, voltage);
       pushData(liveCharts.liveCurrent, current);
@@ -1200,7 +1574,7 @@ if(rateEl){
       pushData(liveCharts.livePower, power);
     }
 
-    /* ===== Performance ===== */
+    // ===== PERFORMANCE =====
     if (performanceCharts.phaseAngle) {
 
       let loadKW = parseFloat((voltage * current * pf / 1000).toFixed(2));
@@ -1209,27 +1583,16 @@ if(rateEl){
       pushData(performanceCharts.phaseAngle, phaseAngle);
       pushData(performanceCharts.load, loadKW);
 
-      energy += loadKW / 3600;
+      // 🔥 ENERGY CALC SAFE
       pushData(performanceCharts.energy, energy);
 
       pushData(performanceCharts.eff, efficiency);
-
-      if (document.getElementById("load")) {
-        document.getElementById("load").innerText = loadKW + " kW";
-      }
-
-      if (document.getElementById("energy")) {
-        document.getElementById("energy").innerText = energy.toFixed(3) + " kWh";
-      }
-
-      if (document.getElementById("efficiency")) {
-        document.getElementById("efficiency").innerText = efficiency + " %";
-      }
     }
 
+    // ===== PHASOR DRAW =====
     drawPhasor();
 
-  }, parseInt(settings.samplingRate) || 1000);
+  }, rate);
 }
 
     
@@ -1277,27 +1640,48 @@ if(rateEl){
   /*********************************
    LOGGER ENGINE (STABLE)
   **********************************/
+let logBuffer = [];
 
-  function startLogger() {
+function startLogger() {
 
-  if (logTimer) clearInterval(logTimer);
+  // 🔥 STOP OLD LOGGER
+  if (logTimer) {
+    clearInterval(logTimer);
+    logTimer = null;
+  }
+
+  if (!loggingEnabled) return;
 
   const settings = getSettings();
+
   const value = parseInt(settings.logValue) || 1;
   const unit = settings.logUnit || "sec";
 
-  let interval = 1500;
+  let interval = 1000;
 
-  if(unit === "sec") interval = value * 1000;
-  else if(unit === "min") interval = value * 60000;
-  else if(unit === "hr") interval = value * 3600000;
+  if (unit === "sec") interval = value * 1000;
+  else if (unit === "min") interval = value * 60000;
+  else if (unit === "hr") interval = value * 3600000;
+
+  console.log("🧠 Logger Interval:", interval);
 
   logTimer = setInterval(() => {
 
-    let logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+    // ===== SMART LOG CONTROL 🔥
+    const settings = getSettings();
+    const mode = settings.systemMode || "simulation";
 
-    logs.push({
-      timestamp: new Date().toISOString(),
+    // ❌ NO DATA → DON'T LOG
+    if (
+      (mode === "esp" && !window.espConnected) ||
+      (mode === "hybrid" && (!window.analysisDataset || window.analysisDataset.length === 0))
+    ) {
+      return;
+    }
+
+    // ✅ ONLY VALID DATA LOG
+    logBuffer.push({
+      timestamp: Date.now(),
       voltage,
       current,
       frequency,
@@ -1305,15 +1689,38 @@ if(rateEl){
       pf,
       phaseAngle,
       temperature,
+      humidity,
       status: evaluateStatus()
     });
 
-    // 🔥 LIMIT (SAFE)
-   if (logs.length > 10000) logs = logs.slice(-8000);
-   
+    // ===== SAVE BUFFER =====
+    if (logBuffer.length >= 10) {
 
-    // 🔥 SAVE OPTIMIZED
-    localStorage.setItem("micropmu_logs", JSON.stringify(logs));
+      let logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+
+      // ✅ merge buffer
+      logs = logs.concat(logBuffer);
+      logBuffer = [];
+
+      const maxLogs = parseInt(settings.maxLogs) || 2000;
+
+      // ✅ limit control
+      if (logs.length > maxLogs) {
+        logs = logs.slice(-Math.floor(maxLogs * 0.8));
+      }
+
+      // ✅ save with throttle
+      if (Date.now() - (window._lastSave || 0) > 2000) {
+        localStorage.setItem("micropmu_logs", JSON.stringify(logs));
+        
+        window._lastSave = Date.now();
+      }
+
+      // 🔥 LIVE UPDATE
+      updateMemoryUsage();
+
+      console.log("📦 Logs Saved:", logs.length);
+    }
 
   }, interval);
 }
@@ -1323,25 +1730,68 @@ if(rateEl){
   let popup = document.getElementById("storagePopup");
 
   if(!popup){
+
     popup = document.createElement("div");
     popup.id = "storagePopup";
 
+    // ===== FULL SCREEN OVERLAY =====
     popup.style.position = "fixed";
-    popup.style.top = "20px";
-    popup.style.right = "20px";
-    popup.style.background = "#dc2626";
-    popup.style.color = "#fff";
-    popup.style.padding = "12px 18px";
-    popup.style.borderRadius = "10px";
-    popup.style.fontWeight = "600";
-    popup.style.zIndex = "9999";
-    popup.style.animation = "blink 1s infinite";
+    popup.style.top = "0";
+    popup.style.left = "0";
+    popup.style.width = "100%";
+    popup.style.height = "100%";
+    popup.style.background = "rgba(0,0,0,0.7)";
+    popup.style.display = "flex";
+    popup.style.alignItems = "center";
+    popup.style.justifyContent = "center";
+    popup.style.zIndex = "99999";
 
-    popup.innerText = "⚠ SYSTEM STORAGE GETTING FULL";
+    // ===== INNER BOX =====
+    popup.innerHTML = `
+      <div style="
+        background:#0f172a;
+        padding:30px 40px;
+        border-radius:16px;
+        text-align:center;
+        box-shadow:0 0 20px rgba(220,38,38,0.6);
+        animation:popupScale 0.3s ease;
+      ">
+        <h2 style="color:#dc2626;margin-bottom:10px;">
+          ⚠ STORAGE WARNING
+        </h2>
+
+        <p style="color:#e2e8f0;margin-bottom:20px;">
+          System storage is getting full.<br>
+          Please clear logs to prevent crash.
+        </p>
+
+        <button onclick="closeStorageWarning()" 
+onmouseover="this.style.transform='scale(1.05)'; this.style.background='#16a34a'" 
+onmouseout="this.style.transform='scale(1)'; this.style.background='#22c55e'" 
+style="
+  display:block;
+  margin:20px auto 0;
+  padding:10px 20px;
+  background:#22c55e;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+  transition: all 0.2s ease;
+">
+  OK
+</button>
+    `;
 
     document.body.appendChild(popup);
   }
 }
+
+function closeStorageWarning(){
+  const popup = document.getElementById("storagePopup");
+  if(popup) popup.remove();
+}
+
 
   function loadSettings() {
 
@@ -1365,7 +1815,123 @@ if(rateEl){
 
   }
 
+  function saveSettings() {
+
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+
+  settings.maxLogs = document.getElementById("maxLogs").value;
+
+  localStorage.setItem("micropmu_settings", JSON.stringify(settings));
+}
+
   window.addEventListener("load", () => {
+
+    // 🔥 MASTER LOOP (ADD THIS)
+// ================= GLOBAL UI LOOP =================
+// 🔥 HARD FIX (GLOBAL SAFE LOOP)
+if(window._mainLoop){
+  clearInterval(window._mainLoop);
+}
+
+window._mainLoop = setInterval(() => {
+
+  updateMemoryUsage();
+  updateWiFiStatus();
+  updateSystemModeUI();
+  trackTimeline();
+
+  const devEl = document.getElementById("deviceCount");
+  if(devEl){
+    devEl.innerText = connectedDevices || 1;
+  }
+
+  const modeLabel = document.getElementById("modeLabel");
+  if (modeLabel) {
+    const mode = localStorage.getItem("networkMode") || "local";
+
+    if (mode === "local") modeLabel.innerText = "Admin Mode";
+    else if (mode === "mirror") modeLabel.innerText = "Sync Mode";
+    else modeLabel.innerText = "Cloud Mode";
+  }
+
+}, 1000);
+
+// ================= PAGE FOCUS / RETURN FIX =================
+window.addEventListener("focus", refreshDashboardUI);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshDashboardUI();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+
+    updateMemoryUsage();
+    updateSystemModeUI();
+    updateWiFiStatus();
+    updateDashboard();
+    broadcastUpdate();
+
+    console.log("⚡ Instant Sync Fix Applied");
+  }
+
+ // 🔥 GLOBAL STORAGE WARNING LISTENER
+setInterval(() => {
+
+  const warn = localStorage.getItem("storageWarning");
+
+  if (warn === "true") {
+
+    showStorageWarning();
+    playBuzzer();
+
+    localStorage.removeItem("storageWarning");
+  }
+
+}, 1000);
+
+// 🔥 CROSS TAB SYNC
+window.addEventListener("storage", (e) => {
+
+  if (e.key === "storageWarning" && e.newValue === "true") {
+    showStorageWarning();
+    playBuzzer();
+  }
+
+});
+
+});
+
+function refreshDashboardUI(){
+
+  updateMemoryUsage();
+  updateWiFiStatus();
+  updateSystemModeUI();
+  trackTimeline();
+
+  // Sync Devices
+  const devEl = document.getElementById("deviceCount");
+  if(devEl){
+    if(devEl && devEl.innerText != connectedDevices){
+  devEl.innerText = connectedDevices || 1;
+}
+  }
+
+  // Mode
+  const modeLabel = document.getElementById("modeLabel");
+  if (modeLabel) {
+    const mode = localStorage.getItem("networkMode") || "local";
+
+    if (mode === "local") modeLabel.innerText = "Admin Mode";
+    else if (mode === "mirror") modeLabel.innerText = "Sync Mode";
+    else modeLabel.innerText = "Cloud Mode";
+  }
+
+  // 🔥 Force dashboard refresh
+  if(typeof updateDashboard === "function"){
+    updateDashboard();
+  }
+
+  console.log("⚡ UI Refreshed on Page Return");
+}
 
     loadSettings();
 
@@ -1379,8 +1945,17 @@ if(rateEl){
     initDashboardCharts();
     initLiveCharts();
     initPerformanceCharts();
+    updateMemoryUsage();
+    setInterval(updateMemoryUsage, 1000);           // 🔥 real update*/
 
     startGraphEngine();
+    const el = document.getElementById("someId");
+
+if(el){
+  el.addEventListener("click", function(){
+    // code
+  });
+}
 
   });
 
@@ -1413,91 +1988,165 @@ if(rateEl){
     });
   }
 
+
+ /*********************************
+             PAGE UPDATE 
+  **********************************/
+
+  // 🔥 INSTANT STORAGE CALC (NO DELAY)
+function getStoragePercent(){
+
+  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+
+  const maxLogs = parseInt(settings.maxLogs) || 2000;
+
+  let percent = (logs.length / maxLogs) * 100;
+  percent = Math.min(percent, 100);
+
+  return percent;
+}
+
   /*********************************
    MEMORY USAGE MONITOR
   **********************************/
 
- function updateMemoryUsage() {
+function updateMemoryUsage() {
 
-  if (!document.getElementById("memoryBar")) return;
-
-  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
-
-  if(logs.length % 10 !== 0) return;
-  const jsonString = JSON.stringify(logs);
-const usedBytes = new TextEncoder().encode(jsonString).length;
-
-  // ✅ FIX (order correct)
-  const maxBytes = 1 * 1024 * 1024;
-
-  let percent = ((usedBytes / maxBytes) * 100);
-  percent = Math.min(percent, 100);
-
+  // ===== SAFE ELEMENT GET =====
   const bar = document.getElementById("memoryBar");
   const text = document.getElementById("memoryText");
-  const container = bar.parentElement;
+  const container = bar ? bar.parentElement : null;
 
+  const exportStorage = document.getElementById("storageUsed");
+  const rec = document.getElementById("reportRecords");
+
+  // ===== SAFE DATA =====
+  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+
+  const jsonString = JSON.stringify(logs);
+  const usedBytes = new TextEncoder().encode(jsonString).length;
+  const maxBytes = 5 * 1024 * 1024;
+
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+  const maxLogs = parseInt(settings.maxLogs) || 2000;
+
+  let percent = (logs.length / maxLogs) * 100;
+  percent = Math.min(percent, 100);
+
+  // ===== EXPORT PAGE SAFE =====
+  if(exportStorage){
+    exportStorage.innerText = percent.toFixed(1) + "%";
+  }
+
+  if(rec){
+    rec.innerText = logs.length;
+  }
+
+  // ===== 🔥 MOST IMPORTANT SAFE CHECK =====
+  if(!bar || !text || !container){
+    return;   // 🔥 EXIT → NO CRASH
+  }
+
+  // ===== RESET CLASSES =====
+  text.classList.remove("storage-red", "storage-blink");
+
+  if (percent >= 90) {
+    text.classList.add("storage-red", "storage-blink");
+  }
+  else if (percent >= 85) {
+    text.classList.add("storage-red");
+  }
+
+  // ===== UI UPDATE =====
   bar.style.width = percent + "%";
   text.innerText = percent.toFixed(1) + "% (" + logs.length + " logs)";
 
+  // ===== COLOR LOGIC =====
+  if (percent < 25) {
+    bar.style.background = "#4ade80";
+    container.style.border = "2px solid #4ade80";
+  }
+  else if (percent < 50) {
+    bar.style.background = "#22c55e";
+    container.style.border = "2px solid #22c55e";
+  }
+  else if (percent < 70) {
+    bar.style.background = "#f97316";
+    container.style.border = "2px solid #f97316";
+  }
+  else {
+    bar.style.background = "#dc2626";
+    container.style.border = "2px solid #dc2626";
+  }
 
-    // ================= COLOR LOGIC =================
-    if (percent < 25) {
-      bar.style.background = "#4ade80";  // light green
-      container.style.border = "2px solid #4ade80";
-    }
-    else if (percent < 50) {
-      bar.style.background = "#22c55e";  // dark green
-      container.style.border = "2px solid #22c55e";
-    }
-    else if (percent < 70) {
-      bar.style.background = "#f97316";  // orange
-      container.style.border = "2px solid #f97316";
-    }
-    else if (percent < 95) {
-      bar.style.background = "#dc2626";  // dark red
-      container.style.border = "2px solid #dc2626";
-    }
+  // ===== WARNING SYSTEM =====
+  if (percent >= 90 && percent < 95) {
 
-    // ================= ALERT (95%) =================
-    if (percent >= 95 && percent < 98) {
+    if (!window._memWarned) {
+      localStorage.setItem("storageWarning", "true");
 
-      if (!window._memWarned) {
-       showStorageWarning();
-       playBuzzer();
-        window._memWarned = true;
+      if(typeof playBuzzer === "function"){
+        playBuzzer();
       }
-    }
 
-    // ================= AUTO RESET (98%) =================
-    if (percent >= 98) {
-
-      alert("🚨 Storage Critical! Auto Resetting Logs...");
-
-      localStorage.removeItem("micropmu_logs");
-      bar.style.width = "0%";
-      text.innerText = "0%";
-
-      stopBuzzer();
-      window._memWarned = false;
-
-      const popup = document.getElementById("storagePopup");
-      if(popup) popup.remove();
-
+      window._memWarned = true;
     }
 
   }
 
-  setInterval(updateMemoryUsage, 2000);
+  else if (percent >= 95 && percent < 98) {
 
+    if (!window._memHigh) {
+      localStorage.setItem("storageWarning", "true");
 
+      if(typeof playBuzzer === "function"){
+        playBuzzer();
+      }
+
+      window._memHigh = true;
+    }
+
+  }
+
+  else if (percent >= 98) {
+
+    if (!window._memCritical) {
+
+      localStorage.setItem("storageWarning", "true");
+
+      if(typeof playBuzzer === "function"){
+        playBuzzer();
+      }
+
+      // 🔥 FULL RESET
+      localStorage.removeItem("micropmu_logs");
+
+      console.log("🚨 Full storage Auto reseted");
+
+      window._memCritical = true;
+    }
+
+  }
+
+  else {
+    window._memWarned = false;
+    window._memHigh = false;
+    window._memCritical = false;
+  }
+
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  updateMemoryUsage();
+});
   /*********************************
    ADVANCED EXPORT CSV (FIXED)
   **********************************/
 
 function exportCSV(btn){
 
-  const mode = getSystemMode();
+  const logs = arguments[0] || getFilteredData();
 
 // ===== MODE VALIDATION =====
 if(mode === "esp" && !window.espConnected){
@@ -1660,6 +2309,49 @@ filtered.forEach(l => {
 }
 
 
+// ===== 🔥 LIVE PAGE DYNAMIC SAMPLING FIX =====
+if(document.body.classList.contains("live-page")){
+
+  let liveInterval;
+
+  function startLiveSystem(){
+
+    // old interval stop
+    if(liveInterval) clearInterval(liveInterval);
+
+    // latest settings read
+    const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+    const rate = settings.samplingRate || 1000;
+
+    // UI update
+    const el = document.getElementById("perfRate");
+    if(el) el.innerText = rate + " ms";
+
+    // restart interval
+    liveInterval = setInterval(runLiveSystem, rate);
+
+    console.log("⚡ Live sampling:", rate);
+  }
+
+  // start once
+  startLiveSystem();
+
+  // 🔁 auto update when settings change
+  window.addEventListener("storage", function(e){
+    if(e.key === "micropmu_settings"){
+      startLiveSystem();
+    }
+  });
+
+}
+
+
+// 🔥 Auto refresh on every data update
+setInterval(() => {
+  generateAIReport();
+}, 2000);
+
+
 function exportChartsPDF(){
 
   const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
@@ -1753,6 +2445,68 @@ function exportExcel(){
 
   }
 }
+
+/********EXPORT PAGE PARAMETERS*********/
+
+function getFilteredData(){
+
+  let logs = getSystemData() || [];
+
+  const start = document.getElementById("startDateTime").value;
+  const end = document.getElementById("endDateTime").value;
+  const mode = document.getElementById("exportMode").value;
+
+  // ⏱️ TIME FILTER
+  logs = logs.filter(l => {
+
+    if(!l.timestamp) return true;
+
+    let t = new Date(l.timestamp).getTime();
+
+    if(start && t < new Date(start).getTime()) return false;
+    if(end && t > new Date(end).getTime()) return false;
+
+    return true;
+  });
+
+  // ⚠️ FAULT FILTER
+  if(mode === "fault"){
+    logs = logs.filter(l => l.status && l.status !== "SYSTEM HEALTHY");
+  }
+
+  return logs;
+}
+
+function applyParamFilter(logs){
+
+  const param = document.getElementById("paramSelect").value;
+
+  if(param === "all") return logs;
+
+  return logs.map(l => ({
+    timestamp: l.timestamp,
+    value: l[param] ?? "N/A"
+  }));
+}
+
+function handleExport(){
+
+  let logs = getFilteredData();
+  logs = applyParamFilter(logs);
+
+  const format = localStorage.getItem("export_format") || "csv";
+
+  if(format === "csv"){
+    exportCSV(logs);
+  }
+  else if(format === "excel"){
+    exportExcel(logs);
+  }
+  else if(format === "pdf"){
+    exportFullPDF(logs);
+  }
+}
+
   /*********************************
    GPS CONNECTION 
   **********************************/
@@ -1978,74 +2732,88 @@ function setLoading(type){
   /*********************************
    ULTRA FAST FIREBASE SYNC (100ms)
   **********************************/
+let firebaseListenerStarted = false;
+let lastUIUpdate = 0; // 🔥 throttle control
 
-  let firebaseListenerStarted = false;
+function startFirebaseSync() {
 
-  function startFirebaseSync() {
+  if (firebaseListenerStarted) return;
 
-    if (firebaseListenerStarted) return;
+  try {
 
-    try {
+    const db = firebase.database();
+    const ref = db.ref("micropmu/live");
 
-      const db = firebase.database();
-      const ref = db.ref("micropmu/live");
+    ref.on("value", (snapshot) => {
 
-      ref.on("child_changed", (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
 
-        const data = snapshot.val();
-        if (!data) return;
+      const start = performance.now();
 
-        const start = performance.now();
+      // ===== SAFE PARSING =====
+      let newV = parseFloat(data.voltage) || 0;
+      let newI = parseFloat(data.current) || 0;
+      let newF = parseFloat(data.frequency) || 50;
+      let newPF = parseFloat(data.pf) || 0.96;
+      let newTemp = parseFloat(data.temperature) || 0;
+      let newH = parseFloat(data.humidity) || 50;
 
-        let newV = parseFloat(data.voltage) || 0;
-        let newI = parseFloat(data.current) || 0;
-        let newF = parseFloat(data.frequency) || 50;
-        let newPF = parseFloat(data.pf) || 0.95;
-        let newTemp = parseFloat(data.temperature) || 0;
+      humidity = newH;
 
-        // 🔥 ULTRA SMOOTH FILTER (FAST RESPONSE)
-        const alpha = 0.4;
+      // ===== SMOOTH FILTER =====
+      const alpha = 0.4;
 
-        voltage = voltage * (1 - alpha) + newV * alpha;
-        current = current * (1 - alpha) + newI * alpha;
+      voltage = voltage * (1 - alpha) + newV * alpha;
+      current = current * (1 - alpha) + newI * alpha;
 
-        frequency = newF;
-        pf = Math.min(Math.max(newPF, 0), 1);
-        temperature = newTemp;
+      frequency = newF;
+      pf = Math.min(Math.max(newPF, 0.01), 1);
+      temperature = newTemp;
 
-        power = parseFloat((voltage * current * pf).toFixed(2));
+      // ===== POWER =====
+      power = parseFloat((voltage * current * pf).toFixed(2));
 
-        // ⚡ ENERGY CALCULATION
-        let now = Date.now();
-        let hours = (now - lastEnergyTime) / 3600000;
+      // ===== REACTIVE POWER (NEW 🔥) =====
+      let apparentPower = voltage * current;
+      let reactivePower = apparentPower * Math.sin(Math.acos(pf));
 
-        energy = parseFloat((energy + (power / 1000) * hours).toFixed(4));
-        lastEnergyTime = now;
+      // ===== ENERGY =====
+      
+      let now = Date.now();
+      let hours = (now - lastEnergyTime) / 3600000;
 
-        phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
+      energy = parseFloat((energy + (power / 1000) * hours).toFixed(4));
+      lastEnergyTime = now;
 
-        espConnected = true;
+      // ===== PHASE ANGLE =====
+      phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
 
-        const end = performance.now();
-        espLatency = Math.round(end - start);
+      espConnected = true;
 
-        requestAnimationFrame(() => {
+      const end = performance.now();
+      espLatency = Math.round(end - start);
+
+      // ===== 🔥 UI THROTTLE (VERY IMPORTANT) =====
+      if (Date.now() - lastUIUpdate < 200) return;
+      lastUIUpdate = Date.now();
+
+      requestAnimationFrame(() => {
         updateDashboard();
         updateWiFiStatus();
         updateSyncStatus();
-        });
-
       });
 
-      firebaseListenerStarted = true;
+    });
 
-      console.log("🔥 Firebase Ultra Sync Started");
+    firebaseListenerStarted = true;
 
-    } catch (e) {
+    console.log("🔥 Firebase Ultra Sync Started");
 
-      console.error("Firebase Sync Error:", e);
-    }
+  } catch (e) {
+    console.error("Firebase Sync Error:", e);
   }
+}
 
   /*********************************
    WIFI STATUS ENGINE
@@ -2244,11 +3012,12 @@ function setLoading(type){
           pf,
           phaseAngle,
           temperature,
+          humidity,
           status: evaluateStatus(),
           timestamp: Date.now()
         });
 
-      }, parseInt(getSettings().samplingRate) || 1000);
+      }, parseInt(getSettings().samplingRate) || 2000);
 
       dbRef.on("value", (snapshot) => {
 
@@ -2420,53 +3189,84 @@ window.isAdminDevice = false;
       const input = document.getElementById("adminPass");
       if (!input) return;
 
-      if (input.value === "Rushii") {
+     if (md5(input.value) === "75cc9bf4f32d25d2be34c46fc308fc6a") {
         sessionStorage.setItem("adminVerified", "true");
         alert("✅Admin Verified Successfully");
         input.value = "";
       } else {
-        alert("Wrong Password");
+        alert("⚠️Wrong Password");
       }
     };
 
     /* ================= RESET ENERGY ================= */
+window.toggleStorage = function () {
 
-    window.secureResetEnergy = function () {
+  // 🔐 ADMIN CHECK
+  if (sessionStorage.getItem("adminVerified") !== "true") {
+    alert("⚠ Verify Admin First");
+    return;
+  }
 
-      if (sessionStorage.getItem("adminVerified") !== "true") {
-        alert("⚠ Verify Admin First");
-        return;
-      }
+  const btn = document.getElementById("storageToggleBtn");
 
-      localStorage.removeItem("micropmu_energy");
-      alert("Energy Counter Reset");
-    };
+  loggingEnabled = !loggingEnabled;
 
-    /* ================= CLEAR LOGS ================= */
+  // ================= DISABLE =================
+  if (!loggingEnabled) {
 
-    window.secureClearLogs = function () {
+    if (logTimer) {
+      clearInterval(logTimer);
+      logTimer = null;
+    }
 
-      if (sessionStorage.getItem("adminVerified") !== "true") {
-        alert("⚠ Verify Admin First");
-        return;
-      }
+    if (btn) {
+      btn.innerText = "Enable Logging";
+      btn.style.background = "#3faf68"; // 🟢 green
+    }
 
-      localStorage.removeItem("micropmu_logs");
-      alert("Logs Cleared");
-    };
+    alert("⛔ Storage Logging Disabled");
+  } 
+  
+  // ================= ENABLE =================
+  else {
 
-    /* ================= TEST BUZZER ================= */
+    startLogger();
 
-    window.testBuzzer = function () {
+    if (btn) {
+      btn.innerText = "Disable Logging";
+      btn.style.background = "#b93c3c"; // 🔴 red
+    }
 
-      if (typeof buzzer !== "undefined") {
-        buzzer.play().then(() => {
-          setTimeout(() => buzzer.pause(), 1500);
-        }).catch(() => { });
-      } else {
-        alert("Buzzer not initialized");
-      }
-    };
+    alert("✅ Storage Logging Enabled");
+  }
+
+}; // 
+
+/* ================= CLEAR LOGS ================= */
+
+window.secureClearLogs = function () {
+
+  if (sessionStorage.getItem("adminVerified") !== "true") {
+    alert("⚠ Verify Admin First");
+    return;
+  }
+
+  localStorage.removeItem("micropmu_logs");
+  alert("✅Logs Cleared");
+};
+
+/* ================= TEST BUZZER ================= */
+
+window.testBuzzer = function () {
+
+  if (typeof buzzer !== "undefined") {
+    buzzer.play().then(() => {
+      setTimeout(() => buzzer.pause(), 1500);
+    }).catch(() => { });
+  } else {
+    alert("Buzzer not initialized");
+  }
+};
 
 /*********************************
  SMART LINK GENERATOR (FINAL REAL FIX)
@@ -2583,19 +3383,51 @@ function updateSystem() {
   const settings = getSettings();
   const mode = settings.systemMode || "simulation";
 
+  // ================= ZERO MODE CONTROL 🔥 =================
+
+  // ❌ ESP NOT CONNECTED
+  if (mode === "esp" && !window.espConnected) {
+
+    voltage = 0;
+    current = 0;
+    frequency = 0;
+    power = 0;
+    pf = 0;
+    temperature = 0;
+    humidity = 0;
+    phaseAngle = 0;
+
+    updateDashboard("NO DATA");
+    return;
+  }
+
+  // ❌ CSV NOT LOADED
+  if (mode === "hybrid" && (!window.analysisDataset || window.analysisDataset.length === 0)) {
+
+    voltage = 0;
+    current = 0;
+    frequency = 0;
+    power = 0;
+    pf = 0;
+    temperature = 0;
+    humidity = 0;
+    phaseAngle = 0;
+
+    updateDashboard("NO DATA");
+    return;
+  }
+
   // ===== ESP MODE =====
   if (mode === "esp") {
-    updateDashboard();
+    if (!firebaseListenerStarted) {
+      safeUIUpdate();
+    }
+    safeUIUpdate();
     return;
   }
 
   // ===== HYBRID MODE =====
   if (mode === "hybrid") {
-
-    if (!window.analysisDataset || window.analysisDataset.length === 0) {
-      console.warn("No CSV dataset");
-      return;
-    }
 
     const d = window.analysisDataset[analysisIndex];
 
@@ -2605,13 +3437,15 @@ function updateSystem() {
     pf = d.pf || 0.95;
     power = d.power || 0;
 
-    temperature = 35;
+    temperature = d.temperature || 0;
+    humidity = d.humidity || 0;
+    pf = Math.min(Math.max(pf, 0.01), 1);
     phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
 
     analysisIndex++;
     if (analysisIndex >= window.analysisDataset.length) analysisIndex = 0;
 
-    updateDashboard();
+    safeUIUpdate();
     return;
   }
 
@@ -2622,105 +3456,124 @@ function updateSystem() {
   if (faultStart === null) {
     faultStart = now;
     activeFaultType = "NORMAL";
-    faultHoldTime = Math.floor(Math.random() * 3000) + 2000; // 2–5 sec stable
+    faultHoldTime = Math.floor(Math.random() * 3000) + 2000;
     return;
   }
 
-  let elapsed = now - faultStart;
+let elapsed = now - faultStart;
 
-  // ===== CONTINUE SAME STATE =====
-  if (elapsed < faultHoldTime) {
-    applyFault(activeFaultType);
-  }
-  else {
-
-    // ===== NEW STATE START =====
-    faultStart = now;
-
-    const event = Math.floor(Math.random() * 100) + 1;
-
-    // ===== BASE SYSTEM =====
-    let baseVoltage = random(225, 235);
-    let basePF = parseFloat((0.94 + Math.random() * 0.04).toFixed(2));
-    let baseFreq = parseFloat((50 + (Math.random() - 0.5) * 0.02).toFixed(2));
-    let loadKW = parseFloat((Math.random() * 2 + 1).toFixed(2));
-
-    voltage = baseVoltage;
-    pf = basePF;
-    frequency = baseFreq;
-
-    // ===== CURRENT =====
-    let targetCurrent = (loadKW * 1000) / (voltage * pf);
-    current = current * 0.85 + targetCurrent * 0.15;
-    if (current < 0.05) current = 0;
-
-    // ===== TEMPERATURE =====
-    let ambient = 28;
-    let heating = current * 1.5;
-    let targetTemp = ambient + heating;
-    temperature = temperature * 0.95 + targetTemp * 0.05;
-    temperature = Math.max(28, Math.min(temperature, 60));
-
-    // ===== FAULT / NORMAL DECISION =====
-
-// ===== NORMAL =====
-if (event <= 45) {
-
-  activeFaultType = "NORMAL";
-  faultHoldTime = Math.floor(Math.random() * 3000) + 2000;
-
+// ===== CONTINUE SAME STATE =====
+if (elapsed < faultHoldTime) {
+  applyFault(activeFaultType);
+  applySystemPhysics();
 }
 else {
 
-  // ===== FAULT =====
-  faultHoldTime = Math.floor(Math.random() * 2500) + 500;
+  // ===== NEW STATE START =====
+  faultStart = now;
 
-  if (event <= 55) activeFaultType = "LOW VOLTAGE";        // 10%
-  else if (event <= 63) activeFaultType = "OVER VOLTAGE";   // 8%
-  else if (event <= 71) activeFaultType = "HIGH CURRENT";   // 8%
-  else if (event <= 78) activeFaultType = "OVERLOAD";       // 7%
-  else if (event <= 85) activeFaultType = "LOW POWER FACTOR"; // 7%
-  else if (event <= 90) activeFaultType = "UNDER FREQUENCY"; // 5%
-  else if (event <= 95) activeFaultType = "OVER FREQUENCY";  // 5%
-  else activeFaultType = "SHORT CIRCUIT";                   // 5%
+  const event = Math.floor(Math.random() * 100) + 1;
 
-  // 🔥 recovery trigger
-  if (activeFaultType === "SHORT CIRCUIT") {
-    forceNormalAfterFault = true;
+  // ===== BASE SYSTEM =====
+  let baseVoltage = random(225, 235);
+  let basePF = parseFloat((0.94 + Math.random() * 0.04).toFixed(2));
+  let baseFreq = parseFloat((50 + (Math.random() - 0.5) * 0.02).toFixed(2));
+  let loadKW = parseFloat((Math.random() * 2 + 1).toFixed(2));
+
+  voltage = baseVoltage;
+  pf = basePF;
+  frequency = baseFreq;
+
+  // ===== CURRENT =====
+  let targetCurrent = (loadKW * 1000) / (voltage * pf);
+  current = current * 0.85 + targetCurrent * 0.15;
+  if (current < 0.05) current = 0;
+
+  // ===== TEMPERATURE =====
+  let ambient = 28;
+  let heating = current * 1.5;
+  let targetTemp = ambient + heating;
+  temperature = temperature * 0.95 + targetTemp * 0.05;
+  temperature = Math.max(28, Math.min(temperature, 60));
+
+  // ===== NORMAL / FAULT =====
+  if (event <= 45) {
+
+    activeFaultType = "NORMAL";
+    faultHoldTime = Math.floor(Math.random() * 3000) + 2000;
+
+  }
+  else {
+
+    faultHoldTime = Math.floor(Math.random() * 2500) + 500;
+
+    if (event <= 55) activeFaultType = "LOW VOLTAGE";
+    else if (event <= 63) activeFaultType = "OVER VOLTAGE";
+    else if (event <= 71) activeFaultType = "HIGH CURRENT";
+    else if (event <= 78) activeFaultType = "OVERLOAD";
+    else if (event <= 85) activeFaultType = "LOW POWER FACTOR";
+    else if (event <= 90) activeFaultType = "UNDER FREQUENCY";
+    else if (event <= 95) activeFaultType = "OVER FREQUENCY";
+    else activeFaultType = "SHORT CIRCUIT";
+
+    if (activeFaultType === "SHORT CIRCUIT") {
+      forceNormalAfterFault = true;
+    }
   }
 }
-  }
 
-  // ===== LIMITS =====
-  pf = Math.min(Math.max(pf, 0), 1);
+// ===== LIMITS =====
+pf = Math.min(Math.max(pf, 0), 1);
 
-  // ===== FINAL CALC =====
-  power = parseFloat((voltage * current * pf).toFixed(1));
-  phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
+// ===== FINAL CALC =====
+power = parseFloat((voltage * current * pf).toFixed(1));
+phaseAngle = parseFloat((Math.acos(pf) * 180 / Math.PI).toFixed(1));
 
-  // ===== SENSOR NOISE =====
-  function noise(val) {
-    return val + (Math.random() - 0.5) * 0.5;
-  }
+// ===== ENERGY CALC (🔥 CORRECT PLACE)
+let hours = (now - lastEnergyTime) / 3600000;
 
-  voltage = parseFloat(noise(voltage).toFixed(2));
-  current = parseFloat(noise(current).toFixed(2));
-
-  updateDashboard();
-
-  // ===== STATUS TRACK =====
-  const currentStatus = evaluateStatus();
-
-  if (currentStatus !== "SYSTEM HEALTHY") {
-    if (!faultStartTime) faultStartTime = new Date();
-  } else {
-    setTimeout(() => {
-      if (evaluateStatus() === "SYSTEM HEALTHY") {
-        faultStartTime = null;
-      }
-    }, 200);
-  }
+if (power > 0) {
+  energy += (power / 1000) * hours;
 }
+
+energy = parseFloat(energy.toFixed(4));
+lastEnergyTime = now;
+
+// ===== SENSOR NOISE =====
+function noise(val) {
+  return val + (Math.random() - 0.5) * 0.5;
+}
+
+voltage = parseFloat(noise(voltage).toFixed(2));
+current = parseFloat(noise(current).toFixed(2));
+
+console.log("Humidity Live:", humidity);
+console.log("Temp:", temperature);
+console.log("Fault:", activeFaultType);
+
+// ===== UPDATE UI
+if(typeof syncGlobalData === "function"){
+  syncGlobalData();
+}
+updateDashboard();
+broadcastUpdate();
+
+
+// ===== STATUS TRACK =====
+const currentStatus = evaluateStatus();
+
+if (currentStatus !== "SYSTEM HEALTHY") {
+  if (!faultStartTime) faultStartTime = new Date();
+} else {
+  setTimeout(() => {
+    if (evaluateStatus() === "SYSTEM HEALTHY") {
+      faultStartTime = null;
+    }
+  }, 200);
+}
+}
+
+
 
   // ==============================================
   // GLOBAL SAVE SETTINGS (CLEAN VERSION)
@@ -2813,14 +3666,24 @@ else {
       }
 
       if (typeof updateDashboard === "function") updateDashboard();
+      
 
-      applyProtectionSettings();
-      applyModeFromSettings();
-      updateSystemModeUI();
-      updateDashboard();   // 🔥 IMPORTANT
-      alert("✅ Settings Saved Successfully");
+     // 🔥 FINAL ENGINE RESTART (CLEAN VERSION)
 
-    } catch (e) {
+        applyProtectionSettings();
+        applyModeFromSettings();
+        updateSystemModeUI();
+
+        startSampling();     // sampling restart
+        startLogger();       // logging restart
+        startGraphEngine();  // graph restart
+
+        applySystemPhysics(); // optional but good sync
+        updateDashboard();   // UI refresh
+
+        console.log("⚙️ Settings Applied");
+        alert("✅ Settings Saved Successfully");
+       } catch (e) {
 
       console.error("Settings Error:", e);
       alert("❌ Error Saving Settings");
@@ -3539,96 +4402,167 @@ MSEDCL Billing Department
   /*********************************
    //EXPORT SECTION AND UPLOAD PDF SECTION
   *********************************/
-  function exportPDF(){
+  /*********************************
+  ✅ PROFESSIONAL DATA ENGINE
+**********************************/
 
-  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+window.analysisDataset = [];
 
-  if(logs.length === 0){
-    alert("No Data Available");
+
+// 🔥 SAFE PARSER
+function safeParse(val){
+  const num = parseFloat(val);
+  return isNaN(num) ? null : num;
+}
+
+/*********************************
+  🔥 CSV LOADER (UPGRADED)
+*********************************/
+
+function loadAnalysisDataset(){
+
+  const fileInput = document.getElementById("analysisFile");
+
+  if (!fileInput || fileInput.files.length === 0){
+    alert("⚠ Upload CSV file first");
     return;
   }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const file = fileInput.files[0];
 
-  doc.text("Micro-PMU Fault Report", 20, 20);
+  // 🔥 FILE TYPE CHECK
+  if(!file.name.endsWith(".csv")){
+    alert("❌ Only CSV file allowed");
+    return;
+  }
 
-  logs.slice(0,20).forEach((l,i)=>{
-    doc.text(
-      `${i+1}. ${l.timestamp} | ${l.status}`,
-      20,
-      30 + (i*6)
-    );
-  });
+  const reader = new FileReader();
 
+  reader.onload = function(e){
 
-  doc.save("MicroPMU_Report.pdf");
-}
+    try{
 
-  function loadAnalysisDataset() {
+      const text = e.target.result.trim();
 
-    const fileInput = document.getElementById("analysisFile");
-
-    if (!fileInput || fileInput.files.length === 0) return;
-
-    const file = fileInput.files[0];
-
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-
-      const text = e.target.result;
-
-      const rows = text.split("\n").slice(1);
+      // 🔥 HANDLE WINDOWS + UNIX LINE BREAK
+      const rows = text.split(/\r?\n/).slice(1);
 
       const dataset = rows.map(r => {
 
         const cols = r.split(",");
 
         return {
+          time: cols[0] || "",
+          voltage: safeParse(cols[1]),
+          current: safeParse(cols[2]),
+          frequency: safeParse(cols[3]),
+          pf: safeParse(cols[4]),
+          power: safeParse(cols[5]),
+          temperature: safeParse(cols[6]),
+          humidity: safeParse(cols[7]),
 
-          time: cols[0],
-
-          voltage: parseFloat(cols[1]),
-
-          current: parseFloat(cols[2]),
-
-          frequency: parseFloat(cols[3]),
-
-          pf: parseFloat(cols[4]),
-
-          power: parseFloat(cols[5])
-
+          // 🔥 AUTO STATUS GENERATION (NEW 🔥)
+          status: generateCSVStatus(cols)
         };
 
-      });
+      }).filter(d => d.voltage !== null);
+
+      if(dataset.length === 0){
+        alert("❌ Invalid CSV format");
+        return;
+      }
 
       window.analysisDataset = dataset;
+      analysisIndex = 0;
 
-      console.log("Analysis dataset loaded:", dataset);
-      console.table(dataset);
-    };
+      // 🔥 SAVE MODE (IMPORTANT 🔥)
+      localStorage.setItem("analysisMode","csv");
 
-    reader.readAsText(file);
-    analysisIndex = 0; // ✅ correct place
-  }
+      console.log("✅ CSV Loaded:", dataset.length);
 
-  function quickExport(type){
+      alert(`✅ CSV Loaded Successfully\nRecords: ${dataset.length}`);
 
-  const now = new Date();
+      // 🔥 AUTO REFRESH EXPORT PAGE (IF OPEN)
+      if(typeof updateExportPage === "function"){
+        updateExportPage();
+      }
 
-  let start = new Date();
+    }catch(err){
+      console.error(err);
+      alert("❌ CSV parsing failed");
+    }
 
-  if(type === "week"){
-    start.setDate(now.getDate()-7);
-  }
-  else if(type === "month"){
-    start.setMonth(now.getMonth()-1);
-  }
+  };
 
-  document.getElementById("startDate").value = start.toISOString().split("T")[0];
-  document.getElementById("endDate").value = now.toISOString().split("T")[0];
+  reader.readAsText(file);
 }
+
+/*********************************
+  🔥 CSV STATUS ENGINE (NEW)
+*********************************/
+
+function generateCSVStatus(cols){
+
+  const voltage = safeParse(cols[1]);
+  const current = safeParse(cols[2]);
+
+  if(voltage === null) return "UNKNOWN";
+
+  if(voltage < 200) return "LOW VOLTAGE";
+  if(voltage > 250) return "OVER VOLTAGE";
+
+  if(current && current > 10) return "OVERLOAD";
+
+  return "SYSTEM HEALTHY";
+}
+
+/*********************************
+  ✅ EXPORT PDF (UPGRADED SAFE)
+*********************************/
+
+function exportPDF(){
+
+  const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+
+  // 🔥 FALLBACK TO CSV DATA
+  const data = logs.length > 0 ? logs : window.analysisDataset;
+
+  if(data.length === 0){
+    alert("⚠ No Data Available");
+    return;
+  }
+
+  if(typeof window.jspdf === "undefined"){
+    alert("❌ PDF library not loaded");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(14);
+  doc.text("Micro-PMU System Report", 20, 20);
+
+  doc.setFontSize(10);
+
+  data.slice(0,50).forEach((l,i)=>{
+
+    const row = `
+${i+1}. ${l.timestamp ? new Date(l.timestamp).toLocaleString() : l.time}
+V:${l.voltage || 0} | I:${l.current || 0} | PF:${l.pf || 0}
+Temp:${l.temperature || 0}°C | Hum:${l.humidity || 0}%
+Status: ${l.status || "N/A"}
+`;
+
+    doc.text(row, 20, 30 + (i*8));
+  });
+
+  doc.save("MicroPMU_Report.pdf");
+
+  alert("✅ PDF Exported Successfully");
+}
+
+
 
   /**************Export Timeline**********************/
   /*********************************************** */
@@ -3698,17 +4632,6 @@ function exportTimeline() {
   // ===================================//
   // ================= FORCE GLOBAL BUTTON FIX =================
 
-  // Dashboard Buzzer
-  window.testBuzzer = function () {
-    if (typeof buzzer !== "undefined") {
-      buzzer.play().then(() => {
-        setTimeout(() => buzzer.pause(), 1500);
-      }).catch(() => { });
-    } else {
-      alert("Buzzer not initialized");
-    }
-  };
-
   // Reset Energy
   window.secureResetEnergy = function () {
     if (sessionStorage.getItem("adminVerified") !== "true") {
@@ -3716,32 +4639,9 @@ function exportTimeline() {
       return;
     }
     localStorage.removeItem("micropmu_energy");
-    alert("Energy Counter Reset");
+    alert("✅ Energy Counter Reset");
   };
 
-  // Clear Logs
-  window.secureClearLogs = function () {
-    if (sessionStorage.getItem("adminVerified") !== "true") {
-      alert("⚠ Verify Admin First");
-      return;
-    }
-    localStorage.removeItem("micropmu_logs");
-    alert("Logs Cleared");
-  };
-
-  // Verify Admin
-  window.verifyAdmin = function () {
-
-    const input = document.getElementById("adminPass");
-
-    if (input.value === "Rushii") {
-      sessionStorage.setItem("adminVerified", "true");
-      alert("✅ Admin Verified Successfully");
-      input.value = "";
-    } else {
-      alert("Wrong Password");
-    }
-  };
 
   /******************************************* */
   /* New Code Merging 
@@ -3887,6 +4787,27 @@ function updateDynamicLimits(){
 
 /**************** AI SYSTEM ***********************/
 
+function predictFailure(){
+
+  if(history.length < 10) return "Stable";
+
+  let first = history[0];
+  let last = history[history.length-1];
+
+  let trend = last.current - first.current;
+
+  if(trend > 2 && last.current > LIMITS.OVERLOAD_CURRENT){
+    return "⚠ Overload Incoming";
+  }
+
+  if(last.temperature > LIMITS.TEMP_MAX - 5){
+    return "⚠ Overheating Risk";
+  }
+
+  return "Stable";
+}
+
+
 window.runAIEngine = function(){
 
   updateDynamicLimits();
@@ -4025,8 +4946,13 @@ window.runAIEngine = function(){
   // ===== LIMIT VALUES =====
   risk = Math.min(risk, 100);
   confidence = Math.min(confidence, 100);
+  
+  // 🔥 HIGH STRESS PREDICTION ADD
+  if (stress > 80) {
+  prediction += "⚠ High failure probability soon. ";
+  } 
 
-  // ===== FORMAT =====
+ // ===== FORMAT =====
   confidence = (confidence + Math.random()*3).toFixed(1) + "%";
 
   return {
@@ -4038,7 +4964,8 @@ window.runAIEngine = function(){
     confidence,
     stress,
     thermal,
-    stability
+    stability,
+    predictionTrend: predictFailure(),
   };
 };
 /**************** AI POPUP FINAL FIX ****************/
@@ -4065,6 +4992,7 @@ window.openAI = function(){
   setAI("aiReason", ai.reason);
   setAI("aiRisk", ai.risk);
   setAI("aiPrediction", ai.prediction);
+  setAI("aiPrediction", ai.prediction + " | " + ai.predictionTrend);
   setAI("aiFix", ai.fix);
   setAI("aiConfidence", ai.confidence);
 
@@ -4127,13 +5055,14 @@ function updateReportHeader(range, count){
   const modeEl = document.getElementById("perfMode");
   const recEl = document.getElementById("reportRecords");
   const rateEl = document.getElementById("perfRate");
+  const storageEl = document.getElementById("storageUsed");
 
   const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
   const mode = settings.systemMode || "simulation";
 
   // ===== SYSTEM MODE =====
   if(modeEl){
-    if(mode === "esp") modeEl.innerText = "ESP Mode";
+    if(mode === "esp") modeEl.innerText = "ESP Live";
     else if(mode === "hybrid") modeEl.innerText = "CSV Analysis";
     else modeEl.innerText = "Simulation";
   }
@@ -4148,6 +5077,31 @@ function updateReportHeader(range, count){
     rateEl.innerText = (settings.samplingRate || 1000) + " ms";
   }
 
+  // ===== STORAGE (🔥 FIXED PROPERLY) =====
+  if(storageEl){
+
+    let percent = getStoragePercent();
+
+    storageEl.innerText = percent.toFixed(1) + "%";
+    storageEl.style.animation = "none";
+
+    if (percent < 25) {
+      storageEl.style.color = "#4ade80";
+    }
+    else if (percent < 50) {
+      storageEl.style.color = "#22c55e";
+    }
+    else if (percent < 70) {
+      storageEl.style.color = "#f97316";
+    }
+    else if (percent < 90) {
+      storageEl.style.color = "#dc2626";
+    }
+    else {
+      storageEl.style.color = "#7f1d1d";
+      storageEl.style.animation = "blink 1s infinite";
+    }
+  }
 }
 
 function updateExportButtons(){
@@ -4182,16 +5136,36 @@ function updateExportButtons(){
 
 document.addEventListener("DOMContentLoaded", () => {
 
+  // ===== STORAGE DISPLAY =====
+  const storageEl = document.getElementById("storageUsed");
+  if (storageEl) {
+    storageEl.innerText = getStoragePercent().toFixed(1) + "%";
+  }
+   updateMemoryUsage();
+
+  // ===== LOGGING BUTTON STATE =====
+  const btn = document.getElementById("storageToggleBtn");
+  if (btn) {
+    if (loggingEnabled) {
+      btn.innerText = "Disable Logging";
+      btn.style.background = "#dc2626"; // 🔴 red
+    } else {
+      btn.innerText = "Enable Logging";
+      btn.style.background = "#22c55e"; // 🟢 green
+    }
+  }
+
+  // ===== SIDEBAR ACTIVE LINK =====
   let currentPage = window.location.pathname.split("/").pop();
 
-  if(currentPage === "" || currentPage === "/"){
+  if (currentPage === "" || currentPage === "/") {
     currentPage = "index.html";
   }
 
   document.querySelectorAll(".sidebar a").forEach(link => {
     link.classList.remove("active");
 
-    if(link.getAttribute("href") === currentPage){
+    if (link.getAttribute("href") === currentPage) {
       link.classList.add("active");
     }
   });

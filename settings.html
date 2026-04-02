@@ -432,6 +432,17 @@ Auto detect works if ESP is on same network.
 <!-- Storage -->
 <div class="setting-card">
 <h3>💾 Storage Usage</h3>
+<!-- 🔥 LOG CONTROL -->
+<div class="log-control">
+  <label>Log Storage Mode</label><br>
+
+  <select id="maxLogs">
+    <option value="1000">Light (Fast)</option>
+    <option value="2000" selected>Balanced (Recommended)</option>
+    <option value="3000">Heavy</option>
+    <option value="5000">Extreme</option>
+  </select>
+</div>
 <div style="background:#0f172a;height:20px;border-radius:8px;overflow:hidden;
             border:2px solid #38bdf8;
             width:100%;              /* 🔥 full available space */
@@ -455,8 +466,10 @@ Auto detect works if ESP is on same network.
   padding-right:20px;
 ">
 
-  <button onclick="secureResetEnergy()">Reset Energy Counter</button>
-  <button onclick="secureClearLogs()">Clear Browser Logs</button>
+  <button id="storageToggleBtn" onclick="toggleStorage()">
+  Enable Logging
+</button>
+  <button onclick="secureClearLogs()">Clear Stored Logs</button>
 
 </div>
 

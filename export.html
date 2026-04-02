@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="icon" href="assets/favicon.ico">
+<title>Export & Audit Center - Micro PMU</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+
+/* ===== EXPORT PANEL ===== */
+/* =====================================
+   EXPORT PANEL (MAIN GRID)
+===================================== */
+.export-panel{
+  background:#020617;
+  padding:25px;
+  border-radius:15px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.6);
+  margin-bottom:25px;
+
+  display:grid;
+  grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;
+}
+
+/* =====================================
+   EXPORT CARD (FIXED UNIFORM BOX)
+===================================== */
+.export-card{
+  background:linear-gradient(145deg,#020617,#0f172a);
+  padding:18px;
+  border-radius:12px;
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+
+  min-height:180px;
+
+  border:1px solid rgba(255,255,255,0.05);
+  transition:all 0.25s ease;
+}
+
+.export-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 10px 25px rgba(0,0,0,0.7);
+}
+
+/* =====================================
+   INPUTS & SELECTS (CONSISTENT)
+===================================== */
+.export-card input,
+.export-card select{
+  width:100%;
+  padding:9px 12px;
+
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);
+
+  background:#020617;
+  color:#e2e8f0;
+
+  outline:none;
+  font-size:13px;
+}
+
+.export-card input:focus,
+.export-card select:focus{
+  border-color:#38bdf8;
+  box-shadow:0 0 6px rgba(56,189,248,0.3);
+}
+
+/* =====================================
+   BUTTONS (PRO STYLE)
+===================================== */
+.export-card button{
+  width:100%;
+  height:40px;
+
+  border-radius:8px;
+  border:none;
+
+  background:#2563eb;
+  color:white;
+
+  font-size:13px;
+  font-weight:500;
+
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+
+.export-card button:hover{
+  background:#1d4ed8;
+  transform:scale(1.03);
+}
+
+/* =====================================
+   HEADINGS & LABELS
+===================================== */
+.export-card h3{
+  font-size:15px;
+  margin-bottom:6px;
+  color:#e2e8f0;
+}
+
+.export-card label{
+  font-size:12px;
+  color:#94a3b8;
+}
+
+/* =====================================
+   HINT TEXT
+===================================== */
+.hint{
+  font-size:11px;
+  color:#94a3b8;
+  margin-top:6px;
+}
+
+/* =====================================
+   FILE UPLOAD BOX
+===================================== */
+.upload-box{
+  border:2px dashed #334155;
+  padding:20px;
+  text-align:center;
+  border-radius:10px;
+  background:#020617;
+}
+
+.upload-box input{
+  margin-top:10px;
+}
+
+/* =====================================
+   MOBILE RESPONSIVE
+===================================== */
+@media(max-width:768px){
+
+  .export-panel{
+    grid-template-columns:1fr;
+    padding:18px;
+  }
+
+  .export-card button,
+  .export-card input,
+  .export-card select{
+    width:100%;
+  }
+}
+
+</style>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf"></script>
+
+</head>
+
+<body class="app-page export-page">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2><i class="fas fa-microchip"></i> Micro-PMU</h2>
+
+  <a href="index.html">
+    <i class="fas fa-chart-line"></i> Dashboard
+  </a>
+
+  <a href="performance.html">
+    <i class="fas fa-gauge-high"></i> Performance
+  </a>
+
+  <a href="live.html">
+    <i class="fas fa-wave-square"></i> Live Data
+  </a>
+
+  <a href="reports.html">
+    <i class="fas fa-file-alt"></i> Reports
+  </a>
+
+  <a href="export.html" class="active">
+    <i class="fas fa-download"></i> Exports
+  </a>
+
+  <a href="energy.html">
+    <i class="fas fa-bolt"></i> Energy Tools
+  </a>
+
+  <a href="settings.html">
+    <i class="fas fa-gear"></i> Settings
+  </a>
+</div>
+
+<!-- 🔥🔥🔥 MAIN WRAPPER FIX (ONLY THIS ADDED) -->
+<div class="main">
+
+<h1>📂 Audit Reports & Energy Analysis</h1>
+
+<!-- ================= REPORT STATUS STRIP ================= -->
+<div class="health-box" style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:20px;
+background:linear-gradient(135deg,#0f172a,#020617);
+border-left:4px solid #ebdc09;
+padding:18px 25px;
+">
+
+<div>
+<h3 style="margin:0;font-weight:600;">   
+<div style="display:flex;gap:25px;flex-wrap:wrap;font-size:13px;">
+📂 Export Analytics Console
+</h3>
+<p style="margin:5px 0 0 0;font-size:13px;opacity:0.8;">
+Live Data Sync & Export Management
+</p>
+</div>
+
+<div style="display:flex;gap:25px;flex-wrap:wrap;font-size:13px;">
+
+<div>
+<span style="opacity:0.7;">System Mode</span><br>
+<b id="perfMode">Simulation</b>
+</div>
+
+<div style="text-align:center;">
+  <span style="opacity:0.7; display:block;">Records</span>
+  <b id="reportRecords" style="font-size:14px;">0</b>
+</div>
+
+<div>
+  <span style="opacity:0.7;">Storage Used</span><br>
+  <b id="storageUsed">0%</b>
+</div>
+
+</div>
+
+</div>
+
+<!-- ================= GRID START ================= -->
+<div class="export-layout">
+
+<!-- ================= LEFT SIDE ================= -->
+<div class="export-left">
+
+  <!-- ================= TIMELINE ================= -->
+<div id="timelinePanel" class="export-card">
+
+  <h3>⚡ Fault Timeline</h3>
+  <div id="timelineList"></div>
+
+</div>
+
+<!-- ================= POWER FLOW ================= -->
+<div id="powerFlowPanel" class="export-card">
+
+  <h3>⚡ Power Flow & Energy Utilization</h3>
+
+  <div class="stats-row">
+
+    <div class="cardStat">
+      <p>Total Generation</p>
+      <h2 id="genVal">--</h2>
+    </div>
+
+    <div class="cardStat">
+      <p>Total Consumption</p>
+      <h2 id="consVal">--</h2>
+    </div>
+
+    <div class="cardStat">
+      <p>System Loss</p>
+      <h2 id="lossVal">--</h2>
+    </div>
+
+  </div>
+
+  <div class="chart-grid">
+
+    <div class="chart-box">
+      <canvas id="energyPie"></canvas>
+    </div>
+
+    <div class="chart-box">
+      <canvas id="powerTrend"></canvas>
+    </div>
+
+  </div>
+
+</div>
+
+</div> <!-- LEFT END -->
+
+<!-- AI -->
+<div class="export-card">
+  <div class="card-header">
+    <h3>🤖 AI System Report</h3>
+    <span class="live-badge">LIVE</span>
+  </div>
+
+  <div id="aiReportBox">
+    Generating report...
+  </div>
+</div>
+
+
+<!-- ================= RIGHT SIDE ================= -->
+<div class="export-right">
+
+<div class="export-panel">
+
+  <h2 style="grid-column:1/-1;">📤 Data Export & Reporting Center</h2>
+
+  <!-- FILTERS -->
+  <div class="export-card">
+    <h3>🔍 Filters</h3>
+
+    <div class="form-group">
+      <label>From</label>
+      <input type="datetime-local" id="startDateTime">
+    </div>
+
+    <div class="form-group">
+      <label>To</label>
+      <input type="datetime-local" id="endDateTime">
+    </div>
+
+    <div class="form-group">
+      <label>Data Mode</label>
+      <select id="exportMode">
+        <option value="full">Full Data</option>
+        <option value="fault">Fault Only</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Parameter</label>
+      <select id="paramSelect">
+        <option value="all">All Parameters</option>
+        <option value="voltage">Voltage</option>
+        <option value="current">Current</option>
+        <option value="power">Power</option>
+        <option value="pf">Power Factor</option>
+        <option value="frequency">Frequency</option>
+        <option value="energy">Total Energy</option>
+        <option value="load">Load Demand</option>
+        <option value="phaseAngle">Phase Angle (°)</option>
+        <option value="temperature">Temperature</option>
+        <option value="humidity">Humidity</option>
+      </select>
+    </div>
+
+  </div>
+
+  <!-- EXPORT -->
+  <div class="export-card">
+    <h3>📦 Export</h3>
+
+    <div class="btn-group">
+      <button onclick="handleExport()">⬇ Download Data</button>
+    </div>
+
+    <p class="hint">
+      Format selected from Settings (CSV / Excel / PDF)
+    </p>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="export-card">
+    <h3>📊 Reports</h3>
+
+    <div class="btn-group">
+      <button onclick="exportPDF()">⚠ Fault Report</button>
+      <button onclick="exportFullPDF()">📄 Full System Report</button>
+    </div>
+  </div>
+
+  <!-- ANALYSIS -->
+  <div class="export-card">
+    <h3>⚡ Analysis</h3>
+
+    <div class="btn-group">
+      <button onclick="exportTimeline()">📈 Event Timeline</button>
+      <button onclick="exportBilling()">💰 Export Energy Bill</button>
+    </div>
+  </div>
+
+</div> <!-- export-panel END -->
+
+
+<!-- GRAPH -->
+<div class="export-card">
+
+  <h3>📊 Data Visualization</h3>
+
+  <div class="graph-controls">
+
+    <select id="graphType">
+      <option value="line">Line</option>
+      <option value="bar">Bar</option>
+    </select>
+
+    <select id="paramA">
+  <option value="voltage">Voltage</option>
+  <option value="current">Current</option>
+  <option value="power">Power</option>
+  <option value="frequency">Frequency</option>
+  <option value="pf">Power Factor</option>
+  <option value="energy">Energy</option>
+  <option value="temperature">Temperature</option>
+  <option value="humidity">Humidity</option>
+  <option value="phaseAngle">Phase Angle</option>
+  <option value="ai">AI Fault Prediction</option>
+</select>
+
+<select id="paramB">
+  <option value="">None</option>
+  <option value="voltage">Voltage</option>
+  <option value="current">Current</option>
+  <option value="power">Power</option>
+  <option value="frequency">Frequency</option>
+  <option value="pf">Power Factor</option>
+  <option value="energy">Energy</option>
+  <option value="temperature">Temperature</option>
+  <option value="humidity">Humidity</option>
+  <option value="phaseAngle">Phase Angle</option>
+</select>
+
+    <button onclick="updateExportGraph()">Generate</button>
+    <button onclick="downloadGraph()">Download</button>
+
+  </div>
+
+  <div class="graph-box">
+    <canvas id="dynamicGraph"></canvas>
+  </div>
+
+  <canvas id="expVoltage" style="display:none;"></canvas>
+  <canvas id="expCurrent" style="display:none;"></canvas>
+
+</div>
+
+</div> <!-- RIGHT END -->
+
+</div> <!-- GRID END -->
+
+</div> <!-- MAIN END -->
+
+
+<script>
+
+ function getSystemData(){
+
+  const mode = localStorage.getItem("analysisMode") || "simulation";
+
+  // ===== 🧪 SIMULATION MODE =====
+  if(mode === "simulation"){
+
+    return [{
+      voltage: window.voltage || 230,
+      current: window.current || 2,
+      frequency: window.frequency || 50,
+      power: window.power || 500,
+      pf: window.pf || 0.95,
+      energy: window.energy || 1.2,
+      timestamp: Date.now(),
+      status: "SIMULATION"
+    }];
+  }
+
+  // ===== ⚡ ESP MODE =====
+  if(mode === "esp"){
+
+    const logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+
+    if(!logs.length){
+      return null;   // 🔥 NO DATA
+    }
+
+    return logs;
+  }
+
+  // ===== 📂 CSV MODE =====
+  if(mode === "csv"){
+
+    if(!window.analysisDataset || !window.analysisDataset.length){
+      return null;   // 🔥 NO DATA
+    }
+
+    return window.analysisDataset;
+  }
+
+  return [];
+}
+
+/*********************************
+ 📊 EXPORT CHART ENGINE
+*********************************/
+
+let expVoltageChart = null;
+let expCurrentChart = null;
+
+function drawExportCharts(){
+
+  const logs = (getSystemData() || []).slice(-300);
+
+  if(!logs.length) return;
+
+  const labels = logs.map(l => new Date(l.timestamp).toLocaleTimeString());
+
+  const voltageData = logs.map(l => l.voltage || 0);
+  const currentData = logs.map(l => l.current || 0);
+
+  if(expVoltageChart) expVoltageChart.destroy();
+  if(expCurrentChart) expCurrentChart.destroy();
+
+  expVoltageChart = new Chart(document.getElementById("expVoltage"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label:"Voltage",
+        data: voltageData,
+        borderColor:"#38bdf8",
+        tension:0.4,
+        pointRadius:0
+      }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false }
+  });
+
+  expCurrentChart = new Chart(document.getElementById("expCurrent"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label:"Current",
+        data: currentData,
+        borderColor:"#f59e0b",
+        tension:0.4,
+        pointRadius:0
+      }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false }
+  });
+
+}
+function generateAIReport(){
+
+  const box = document.getElementById("aiReportBox");
+  if(!box) return;
+
+  const mode = localStorage.getItem("analysisMode") || "simulation";
+
+  let logs = [];
+
+  // ================= 🧪 SIMULATION MODE =================
+  if(mode === "simulation"){
+
+  if(!window.liveHistory){
+    window.liveHistory = [];
+  }
+
+  const newPoint = {
+    voltage: Number(window.voltage || 230),
+    power: Number(window.power || 500),
+    status: typeof evaluateStatus === "function" ? evaluateStatus() : "SYSTEM HEALTHY"
+  };
+
+  window.liveHistory.push(newPoint);
+
+  // 🔥 keep last 50 points
+  if(window.liveHistory.length > 50){
+    window.liveHistory.shift();
+  }
+
+  logs = window.liveHistory;
+}
+
+  // ================= ⚡ ESP MODE =================
+  else if(mode === "esp"){
+
+    logs = JSON.parse(localStorage.getItem("micropmu_logs") || "[]");
+
+    if(!logs.length){
+      box.innerHTML = "No data available";
+      return;
+    }
+  }
+
+  // ================= 📂 CSV MODE =================
+  else if(mode === "csv"){
+
+    if(!window.analysisDataset || !window.analysisDataset.length){
+      box.innerHTML = "No data available";
+      return;
+    }
+
+    logs = window.analysisDataset;
+  }
+
+  if(!logs.length){
+    box.innerHTML = "No data available";
+    return;
+  }
+
+  // ===== BASIC =====
+  let voltages = logs.map(l => l.voltage || 0);
+  let powers = logs.map(l => l.power || 0);
+
+  let faults = logs.filter(l => l.status && l.status !== "SYSTEM HEALTHY").length;
+
+  let avgV = (voltages.reduce((a,b)=>a+b,0)/voltages.length).toFixed(1);
+  let maxV = Math.max(...voltages);
+  let minV = Math.min(...voltages);
+
+  let avgPower = (powers.reduce((a,b)=>a+b,0)/powers.length).toFixed(1);
+
+  // ================= REAL TREND =================
+  let trend = "Stable";
+
+  if(voltages.length > 10){
+
+    let last = voltages.slice(-5);
+    let prev = voltages.slice(-10, -5);
+
+    let avgLast = last.reduce((a,b)=>a+b,0)/last.length;
+    let avgPrev = prev.reduce((a,b)=>a+b,0)/prev.length;
+
+    if(avgLast > avgPrev + 3) trend = "Voltage Rising ⚡";
+    else if(avgLast < avgPrev - 3) trend = "Voltage Dropping ⚠️";
+  }
+
+  // ================= REAL PREDICTION =================
+  let prediction = "Normal";
+
+  if(maxV > 245) prediction = "⚠️ Overvoltage Risk";
+  else if(minV < 200) prediction = "⚠️ Undervoltage Risk";
+  else if(avgPower > 800) prediction = "⚠️ Load Increasing";
+
+  // ================= HEALTH ENGINE =================
+  let health = "🟢 Stable";
+
+  if(faults > 20) health = "🔴 Critical";
+  else if(faults > 5) health = "🟡 Warning";
+
+  // ================= SMART INSIGHT =================
+  let insight = "";
+
+  if(faults === 0){
+    insight = "System stable with no abnormal events.";
+  }
+  else if(trend.includes("Dropping")){
+    insight = "Voltage decline observed. Check load distribution.";
+  }
+  else if(trend.includes("Rising")){
+    insight = "Voltage rising trend. Possible grid fluctuation.";
+  }
+  else if(prediction !== "Normal"){
+    insight = "System approaching critical limits. Monitor closely.";
+  }
+  else{
+    insight = "System running with minor variations.";
+  }
+
+  // ================= FINAL OUTPUT =================
+  box.innerHTML = `
+  <b>⚡ AI Smart Report</b><br><br>
+
+  • Mode: ${mode.toUpperCase()} <br>
+  • Records: ${logs.length} <br>
+  • Fault Events: ${faults} <br>
+  • Avg Voltage: ${avgV} V <br>
+  • Max/Min: ${maxV} / ${minV} V <br>
+  • Avg Power: ${avgPower} W <br><br>
+
+  • Trend: ${trend} <br>
+  • Prediction: ${prediction} <br>
+  • Health: ${health} <br><br>
+
+  <b>🧠 Insight:</b> ${insight}
+  `;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  generateAIReport(); // first run
+
+  setInterval(() => {
+    generateAIReport();
+  }, 2000);
+
+});
+
+/*********************************
+ ⚡ FEEDERS AI
+*********************************/
+
+let pieChart = null;
+let trendChart = null;
+
+function updatePowerFlow(){
+
+  const logs = (getSystemData() || []).slice(-100);
+  if(!logs.length) return;
+
+  // 🔌 Total Consumption
+  let totalPower = logs.reduce((sum,l)=>sum+(l.power||0),0);
+
+  // ⚡ Virtual Generation (assume 10% extra)
+  let generation = totalPower * 1.1;
+
+  let loss = generation - totalPower;
+
+  // ===== UI =====
+  document.getElementById("genVal").innerText = generation.toFixed(1) + " W";
+  document.getElementById("consVal").innerText = totalPower.toFixed(1) + " W";
+  document.getElementById("lossVal").innerText = loss.toFixed(1) + " W";
+
+  // ===== VIRTUAL FEEDERS =====
+  let feederA = totalPower * 0.4;
+  let feederB = totalPower * 0.35;
+  let feederC = totalPower * 0.25;
+
+  // ===== PIE CHART =====
+  if(pieChart) pieChart.destroy();
+
+  pieChart = new Chart(document.getElementById("energyPie"), {
+    type:"pie",
+    data:{
+      labels:["Lighting","Motor","Heating"],
+      datasets:[{
+        data:[feederA, feederB, feederC]
+      }]
+    },
+    options:{ responsive:true }
+  });
+
+  // ===== TREND =====
+  let powerTrendData = logs.map(l=>l.power || 0);
+
+  if(trendChart) trendChart.destroy();
+
+  trendChart = new Chart(document.getElementById("powerTrend"), {
+    type:"line",
+    data:{
+      labels: powerTrendData.map((_,i)=>i),
+      datasets:[{
+        label:"Power Trend",
+        data: powerTrendData
+      }]
+    },
+    options:{ responsive:true }
+  });
+
+}
+
+/*********************************
+ 📄 PDF WITH CHARTS
+*********************************/
+
+function exportFullPDF(){
+
+  const el = document.querySelector(".main");
+
+  if(!el){
+    alert("Export content not found");
+    return;
+  }
+
+  html2pdf()
+    .set({
+      margin:10,
+      filename:"MicroPMU_Full_Report.pdf",
+      html2canvas:{ scale:2 },
+      jsPDF:{ unit:"mm", format:"a4", orientation:"portrait" }
+    })
+    .from(el)
+    .save();
+}
+
+/*********************************
+ 🔥 EXPORT PAGE AUTO SYNC ENGINE
+*********************************/
+
+function updateExportPage(){
+
+  const logs = getSystemData() || [];
+
+  const faultLogs = logs.filter(l =>
+    l.status && l.status !== "SYSTEM HEALTHY"
+  );
+
+  const container = document.getElementById("timelineList");
+  const panel = document.getElementById("timelinePanel");
+
+  if(container && panel){
+
+    container.innerHTML = "";
+
+    if(faultLogs.length === 0){
+      panel.style.display = "none";
+      return;
+    }
+
+    panel.style.display = "flex";
+
+    faultLogs.slice(-20).reverse().forEach(l => {
+      const row = document.createElement("div");
+
+      const time = new Date(l.timestamp || Date.now()).toLocaleTimeString();
+
+      row.innerHTML = `
+        <span style="color:#94a3b8">${time}</span> →
+        <b style="color:#ef4444">${l.status}</b> →
+        <span style="color:#38bdf8">
+          ${l.voltage ? l.voltage.toFixed(1)+"V" : "--"}
+        </span>
+      `;
+
+      container.appendChild(row);
+    });
+  }
+
+  generateAIReport();
+  updatePowerFlow();
+  updateMemoryUsage();
+}
+
+
+/*********************************
+ AUTO REFRESH
+*********************************/
+
+function startExportAutoRefresh(){
+
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+  const rate = settings.samplingRate || 1000;
+
+  if(window.exportInterval){
+    clearInterval(window.exportInterval);
+  }
+
+  window.exportInterval = setInterval(updateExportPage, rate);
+}
+
+/*********************************
+ 📊 DYNAMIC EXPORT GRAPH
+*********************************/
+let exportChart = null;
+
+function updateExportGraph(){
+
+  const type = document.getElementById("graphType").value;
+  const paramA = document.getElementById("paramA").value;
+  const paramB = document.getElementById("paramB").value;
+
+  let data = getSystemData() || [];
+
+  // ===== SIMULATION FALLBACK =====
+  if(!data.length && window.voltage){
+    data = [{
+      voltage: window.voltage,
+      current: window.current,
+      power: window.power,
+      frequency: window.frequency,
+      pf: window.pf,
+      energy: window.energy,
+      temperature: window.temperature,
+      humidity: window.humidity,
+      phaseAngle: window.phaseAngle,
+      timestamp: Date.now()
+    }];
+  }
+
+  if(!data.length){
+    alert("No data available");
+    return;
+  }
+
+  const labels = data.map(d =>
+    new Date(d.timestamp || Date.now()).toLocaleTimeString()
+  );
+
+  // ===== AI CHECK =====
+  if(paramA === "ai" && paramB){
+    alert("AI graph supports only single parameter");
+    return;
+  }
+
+  const datasets = [];
+
+  // ===== PARAM A =====
+  let datasetA;
+
+  if(paramA === "ai"){
+
+    const voltages = data.map(d => d.voltage || 0);
+
+    datasetA = voltages.map((v, i) => {
+
+      if(i < 5) return 10;
+
+      const prev = voltages.slice(i-5, i);
+      const avgPrev = prev.reduce((a,b)=>a+b,0)/prev.length;
+
+      let score = 0;
+
+      if(v > avgPrev + 3) score += 40;
+      else if(v < avgPrev - 3) score += 40;
+
+      if(v > 245) score += 30;
+      if(v < 200) score += 30;
+
+      const p = data[i].power || 0;
+      if(p > 800) score += 20;
+
+      return Math.min(score, 100);
+    });
+
+  } else {
+
+    datasetA = data.map(d => d[paramA] || 0);
+  }
+
+  // 🔥 PUSH PARAM A
+  datasets.push({
+    label: paramA === "ai" ? "AI PREDICTION (%)" : paramA.toUpperCase(),
+    data: datasetA,
+    borderColor: "#38bdf8",
+    backgroundColor: "#38bdf8",
+    yAxisID: "y",
+    tension: 0.3
+  });
+
+  // ===== PARAM B =====
+  if(paramB && paramA !== "ai"){
+
+    // 🔥 SAME PARAM CASE HANDLE
+    if(paramA === paramB){
+      alert("Both parameters same — showing single graph only");
+    } else {
+
+      const datasetB = data.map(d => d[paramB] || 0);
+
+      datasets.push({
+        label: paramB.toUpperCase(),
+        data: datasetB,
+        borderColor: "#f59e0b",
+        backgroundColor: "#f59e0b",
+        yAxisID: "y1",
+        tension: 0.3
+      });
+    }
+  }
+
+  // ===== DESTROY OLD =====
+  if(exportChart){
+    exportChart.destroy();
+  }
+
+  // ===== CREATE =====
+  exportChart = new Chart(document.getElementById("dynamicGraph"), {
+    type,
+    data:{ labels, datasets },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+
+      plugins:{
+        legend:{ labels:{ color:"#e2e8f0" } },
+        zoom:{
+          pan:{ enabled:true, mode:"x" },
+          zoom:{
+            wheel:{ enabled:true },
+            pinch:{ enabled:true },
+            mode:"x"
+          }
+        }
+      },
+
+      scales:{
+        x:{ ticks:{ color:"#94a3b8" } },
+
+        y:{
+          position:"left",
+          ticks:{ color:"#38bdf8" }
+        },
+
+        y1:{
+          display:(datasets.length > 1),
+          position:"right",
+          grid:{ drawOnChartArea:false },
+          ticks:{ color:"#f59e0b" }
+        }
+      }
+    }
+  });
+
+}
+
+// 🔥 AUTO LOAD
+document.addEventListener("DOMContentLoaded", () => {
+  updateExportGraph();
+});
+
+/*********************************
+ 📥 DOWNLOAD GRAPH
+*********************************/
+
+function downloadGraph(){
+
+  if(!exportChart) return alert("No graph");
+
+  const canvas = document.getElementById("dynamicGraph");
+
+  // ===== PNG =====
+  const link = document.createElement("a");
+  link.download = "graph.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+
+  // ===== PDF =====
+  const pdf = new jspdf.jsPDF();
+  pdf.text("Micro-PMU Graph Report", 10, 10);
+  pdf.addImage(canvas.toDataURL("image/png"), "PNG", 10, 20, 180, 100);
+  pdf.save("graph.pdf");
+}
+/*********************************
+ 🚀 FINAL INIT
+*********************************/
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  if(typeof Chart === "undefined"){
+    console.error("Chart.js not loaded");
+    return;
+  }
+
+  // 🔄 INITIAL LOAD
+  updateExportPage();
+  generateAIReport();
+  updatePowerFlow();
+  drawExportCharts();
+  updateExportGraph();
+
+  // ⏱ AUTO REFRESH START
+  startExportAutoRefresh();
+  setInterval(updateMemoryUsage, 1000);
+
+});
+
+
+// ===== TEMP BUTTON FUNCTIONS =====
+function handleExport(){
+  alert("Download working");
+}
+
+function exportPDF(){
+  alert("Fault report ready");
+}
+
+function exportTimeline(){
+  alert("Timeline exported");
+}
+
+function exportBilling(){
+  alert("Billing exported");
+}
+
+// 🔗 MULTI-TAB / LIVE SYNC
+window.addEventListener("storage", (e) => {
+
+  if(e.key === "micropmu_sync"){
+
+    updateExportPage();
+    generateAIReport();
+    updatePowerFlow();
+    updateExportGraph();
+
+  }
+
+});
+document.addEventListener("DOMContentLoaded", () => {
+
+  drawExportCharts();   // export page graph
+  generateAIReport();   // AI box (optional)
+
+});
+
+</script>
+
+<!-- 1. Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- 2. html2pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- 3. MD5 (ADD HERE) ✅ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+
+<!-- 4. MAIN JS LAST -->
+<script src="js/main.js"></script>
+</body>
+</html>
+
