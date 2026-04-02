@@ -13,13 +13,18 @@ function getSystemData(){
 
   // ===== ESP MODE =====
   if(mode === "esp"){
-    return [{
-      voltage, current, frequency, power, pf,
-      temperature, humidity,
-      status: evaluateStatus(),
-      timestamp: Date.now()
-    }];
-  }
+  return [{
+    voltage,
+    current,
+    frequency,
+    power,
+    pf,
+    temperature,
+    humidity,
+    status: evaluateStatus(),
+    timestamp: Date.now()
+  }];
+}
 
   // ===== CSV MODE =====
   if(mode === "hybrid"){
@@ -99,6 +104,33 @@ window.current = 2;
 window.power = 500;
 window.frequency = 50;
 window.pf = 0.95;
+
+
+// 🔥 ===== ADD THIS FUNCTION HERE =====
+async function fetchESPData(){
+
+  try{
+
+    const res = await fetch("http://10.83.132.94/data");
+    const data = await res.json();
+
+    voltage = data.voltage;
+    current = data.current;
+    frequency = data.frequency;
+    power = data.power;
+    pf = data.pf;
+    temperature = data.temperature;
+    humidity = data.humidity;
+
+    window.espConnected = true;
+
+  }catch(e){
+
+    console.error("ESP Error:", e);
+    window.espConnected = false;
+
+  }
+}
 
 
 function syncGlobalData(){
@@ -5135,6 +5167,20 @@ function updateExportButtons(){
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+
+   // 🔥 ADD THIS HERE
+  setInterval(() => {
+
+    if(getSystemMode() === "esp"){
+      fetchESPData();
+    }
+
+  }, 1000);
+
+
+  // existing code...
+  loadFirebaseSafe();
+  detectModeFromURL();
 
   // ===== STORAGE DISPLAY =====
   const storageEl = document.getElementById("storageUsed");
