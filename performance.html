@@ -33,6 +33,7 @@ margin-top:25px;
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 
+
 <body class="app-page performance-page">
 
 <div class="sidebar">
@@ -102,8 +103,8 @@ Advanced Electrical Performance & Energy Intelligence
 </div>
 
 <div>
-<span style="opacity:0.7;">Sync Status</span><br>
-<b style="color:#22c55e;">● Active</b>
+  <span style="opacity:0.7;">Sync Status</span><br>
+  <b id="syncStatus"></b>
 </div>
 
 <div>
@@ -184,7 +185,7 @@ Advanced Electrical Performance & Energy Intelligence
 </div>
 
 <!-- 🔐 ACCESS POPUP ADD HERE -->
-<div id="accessPopup" style="
+<div id="adminAccessPopup" style="
   display:none;
   position:fixed;
   top:0;left:0;
@@ -215,16 +216,16 @@ Advanced Electrical Performance & Energy Intelligence
 
     <div style="position:relative;margin-top:10px;">
 
-      <input type="password" id="accessPass" placeholder="Enter password">
+      <input type="password" id="adminAccessPass" placeholder="Enter password">
 
-     <span id="eyeIcon" onclick="togglePass()" 
+      <span id="adminEyeIcon" onclick="togglePass()" 
       style="position:absolute;right:25px;top:50%;transform:translateY(-50%);cursor:pointer;">
-  <i class="fas fa-eye"></i>
-</span>
+        <i class="fas fa-eye"></i>
+      </span>
 
     </div>
 
-    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+    <p id="adminAttemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
       Attempts left: 3
     </p>
 

@@ -13,7 +13,7 @@ button{
   
   width: 44%;
   height: 38px;
-  background: #2563eb;
+  background: #2d5abc;
   color: #fff;
   font-weight: 600;
   border-radius: 10px;
@@ -28,38 +28,82 @@ button{
   transition: 0.3s;
  
 }
+/* 🔥 HOVER ADD */
+button:hover{
+  background:#1e40af;   /* darker blue */
+}
 
 
 
 
+
+/* ===== SETTINGS LABEL ===== */
 .setting-card label{
-display:block;
-font-size:13px;
-margin-top:8px;
-opacity:0.85;
+  display:block;
+  font-size:13px;
+  margin-top:8px;
+  opacity:0.85;
 }
+
+/* ===== UNIFORM INPUT + SELECT (ALL TYPES FIXED) ===== */
 .setting-card input,
+.setting-card select,
+.field input,
+.field select{
+  width:100% !important;
+  max-width:240px !important;
+  
+
+  height:42px !important;            /* 🔥 SAME HEIGHT */
+  padding:0 12px !important;         /* 🔥 SAME PADDING */
+
+  font-size:13px;
+  margin-top:4px;
+
+  border-radius:6px;
+  box-sizing:border-box !important;
+  
+
+  background:#1e293b;
+  color:#fff;
+}
+
+/* ===== REMOVE SELECT DEFAULT STYLE ===== */
+.setting-card select,
+.field select{
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+
+  padding-right:30px !important;   /* arrow space */
+}
+
+/* ===== CUSTOM ARROW ===== */
 .setting-card select{
-width:100%;
-max-width:220px;
-padding:7px 10px;
-font-size:13px;
-margin-top:4px;
-border-radius:6px;
+  background:#1e293b url("data:image/svg+xml;utf8,<svg fill='white' height='10' viewBox='0 0 20 20'><path d='M5 7l5 5 5-5'/></svg>") no-repeat right 10px center;
+  background-size:12px;
 }
+
+/* ===== BUTTON ===== */
 .setting-card button{
-margin-top:10px;
-cursor:pointer;
+  margin-top:10px;
+  cursor:pointer;
 }
+
+/* ===== ADMIN BOX ===== */
 .admin-box{
-background:#111827;
-padding:12px;
-border-radius:8px;
-margin-top:10px;
+  background:#111827;
+  padding:18px;
+  
+  border-radius:8px;
+  margin-top:10px;
 }
+
+
 </style>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
 </head>
 
 <body class="app-page settings-page">
@@ -166,11 +210,36 @@ Protection Control • System Modes • Secure Access • Device Sync
 <option value="filtered">Filtered Monitoring</option>
 <option value="analysis">Analysis Mode (CSV Dataset)</option>
 </select>
-<label>Upload Analysis Dataset (CSV)</label>
-<input type="file" id="analysisFile" accept=".csv">
+<label style="display:block;margin-bottom:-1px;">
+  Upload Analysis Dataset (CSV)
+</label>
 
-<p style="font-size:12px;opacity:0.7;">
-CSV format: time,voltage,current,frequency,pf,power
+<div id="analysisFileWrapper" style="position:relative; display:inline-block;">
+
+  <input type="file" id="analysisFile"
+    accept=".csv,.xlsx"
+    style="height:32px; padding-right:30px;"
+    onchange="handleFileUpload(this.files[0])">
+
+  <!-- ❌ REMOVE ICON -->
+  <i id="removeCSVBtn"
+     class="fas fa-times"
+     onclick="clearCSVFile()"
+     style="
+       position:absolute;
+       right:8px;
+       top:50%;
+       transform:translateY(-50%);
+       cursor:pointer;
+       color:#ef4444;
+       display:none;
+     ">
+  </i>
+
+</div>
+
+<p style="font-size:12px;opacity:0.7;margin-top:-4px;">
+  File format: time, voltage, current, frequency, pf, power, temperature.
 </p>
 <label>Analysis Window</label>
 <select id="analysisWindow">
@@ -195,23 +264,19 @@ CSV format: time,voltage,current,frequency,pf,power
 <label>ESP Device IP</label>
 <input type="text" id="deviceIP" value="192.168.4.1">
 
-<label>Connection Timeout (ms)</label>
-<input type="number" id="espTimeout" value="2000">
-
-<label>Auto Reconnect</label>
-<select id="autoReconnect">
-<option value="on">Enabled</option>
-<option value="off">Disabled</option>
-</select>
-
-<label>Scan Interval (sec)</label>
-<input type="number" id="scanInterval" value="5">
+<label>Connection Status</label>
+<div class="status-live-box">
+  <span id="wifiStatusText">Disconnected</span>
+</div>
 
 <button class="btn-test" onclick="testESPConnection()">Test Connection</button>
 
 <p style="font-size:12px;opacity:0.7;">
 Auto detect works if ESP is on same network.
 </p>
+
+<!-- 🔥 STATUS MESSAGE HERE -->
+<div id="connectionMsg" class="conn-msg"></div>
 
 </div>
 
@@ -392,7 +457,7 @@ Auto detect works if ESP is on same network.
 <div class="setting-card">
 <h3>📱 Remote Access (QR & Link)</h3>
 <button onclick="generateLink()">Generate Link</button>
-<div style="position:relative;margin-top:8px;max-width:196px;">
+<div style="position:relative;margin-top:8px;max-width:296px;">
 
   <input 
     type="text" 
@@ -404,7 +469,7 @@ Auto detect works if ESP is on same network.
   <span onclick="copyLink()" 
     style="
       position:absolute;
-      right:-32px;
+      right:68px;
       top:52%;
       transform:translateY(-50%);
       cursor:pointer;
@@ -413,20 +478,22 @@ Auto detect works if ESP is on same network.
 </span>
 
 </div>
-<button onclick="generateQR()">Generate QR</button>
+
+<button id="genBtn" onclick="generateQR()">Generate QR</button>
+
+<div id="qrCode"></div>   <!-- 🔥 yahi important -->
+
 <label>Network Access Mode</label>
 <select id="networkMode">
 <option value="local">Admin Mode</option>
 <option value="mirror">Sync Mode</option>
 <option value="remote">Cloud Mode</option>
 </select>
+
 <button class="btn-danger" onclick="logoutAccess()">🚪 Logout Access</button>
-<p style="font-size:12px;opacity:0.7;">
 
-</p>
+<p style="font-size:12px;opacity:0.7;"></p>
 
-
-<div id="qrCode" style="margin-top:2000px;"></div>
 </div>
 
 <!-- Storage -->
@@ -483,7 +550,7 @@ Auto detect works if ESP is on same network.
 
 <form onsubmit="return false;">
 
-  <div style="position:relative;margin-top:10px;max-width:186px;">
+  <div style="position:relative;margin-top:10px;max-width:230px;">
 
     <input 
       type="password" 
@@ -491,6 +558,7 @@ Auto detect works if ESP is on same network.
       placeholder="Enter admin password"
       style="
         width:100%;
+      
         padding:7px 35px 7px 10px;
         border-radius:6px;
       "
@@ -499,7 +567,7 @@ Auto detect works if ESP is on same network.
     <span id="adminEye" onclick="toggleAdminPass()" 
       style="
         position:absolute;
-        right:-34px;
+        right:10px;
         top:56%;
         transform:translateY(-50%);
         cursor:pointer;
@@ -536,7 +604,7 @@ Password required once per tab session.
 
 
 <!-- 🔐 ACCESS POPUP ADD HERE -->
-<div id="accessPopup" style="
+<div id="adminAccessPopup" style="
   display:none;
   position:fixed;
   top:0;left:0;
@@ -567,16 +635,16 @@ Password required once per tab session.
 
     <div style="position:relative;margin-top:10px;">
 
-      <input type="password" id="accessPass" placeholder="Enter password">
+      <input type="password" id="adminAccessPass" placeholder="Enter password">
 
-      <span id="eyeIcon" onclick="togglePass()" 
+      <span id="adminEyeIcon" onclick="togglePass()" 
       style="position:absolute;right:25px;top:50%;transform:translateY(-50%);cursor:pointer;">
-  <i class="fas fa-eye"></i>
-</span>
+        <i class="fas fa-eye"></i>
+      </span>
 
     </div>
 
-    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+    <p id="adminAttemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
       Attempts left: 3
     </p>
 
@@ -590,6 +658,8 @@ Password required once per tab session.
 
 <!-- 1. Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 

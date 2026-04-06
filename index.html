@@ -78,9 +78,12 @@
 <!-- RIGHT SIDE PANEL -->
 <div style="margin-left:auto;display:flex;align-items:center;gap:25px;">
 
-  <!-- WIFI -->
-  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-    <span style="opacity:0.8;">WiFi</span>
+ <div style="display:flex;align-items:center;gap:9px;font-size:13px;
+            transform:translate(-28px, 7px);">
+  
+  <span style="font-weight:bold;">
+    <i class="fas fa-satellite-dish"></i> ESP
+  </span>
 
     <div id="wifiLed" class="wifi-led"></div>
 
@@ -93,6 +96,7 @@
 
     <span id="wifiLatency">-- ms</span>
   </div>
+  
 
 </div>
 
@@ -103,7 +107,7 @@
 <div style="
 position:absolute;
 right:130px;
-top:25px;
+top:30px;
 display:grid;
 grid-template-columns:auto auto auto;
 row-gap:6.5px;
@@ -128,6 +132,14 @@ align-items:center;
   <b><i class="fas fa-database"></i> Storage Used</b>
   <b>:</b>
   <span id="storageUsed">0%</span>
+
+ <div id="csvControlBox" style="margin-top:1px; margin-left:-5px; display:none;">
+  <button id="csvPlayBtn" onclick="toggleCSVPlayback()" 
+    style="padding:4px 8px; border-radius:5px; cursor:pointer;">
+    <i id="csvPlayIcon" class="fas fa-play"></i>
+  </button>
+</div>
+
 
 
 </div>
@@ -228,7 +240,7 @@ align-items:center;
 
 
 <!-- 🔐 ACCESS POPUP ADD HERE -->
-<div id="accessPopup" style="
+<div id="adminAccessPopup" style="
   display:none;
   position:fixed;
   top:0;left:0;
@@ -259,16 +271,16 @@ align-items:center;
 
     <div style="position:relative;margin-top:10px;">
 
-      <input type="password" id="accessPass" placeholder="Enter password">
+      <input type="password" id="adminAccessPass" placeholder="Enter password">
 
-      <span id="eyeIcon" onclick="togglePass()" 
+      <span id="adminEyeIcon" onclick="togglePass()" 
       style="position:absolute;right:25px;top:50%;transform:translateY(-50%);cursor:pointer;">
-  <i class="fas fa-eye"></i>
-</span>
+        <i class="fas fa-eye"></i>
+      </span>
 
     </div>
 
-    <p id="attemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
+    <p id="adminAttemptInfo" style="font-size:12px;margin-top:8px;color:#94a3b8;">
       Attempts left: 3
     </p>
 
@@ -345,6 +357,7 @@ align-items:center;
   </div>
 
 </div>
+
 
 <!-- 1. Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

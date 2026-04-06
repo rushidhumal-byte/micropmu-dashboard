@@ -284,6 +284,10 @@ body:not(.energy-page) .card{
   100%{opacity:1;}
 }
 
+.blink {
+  animation: blink 1s infinite;
+}
+
 /* =====================================
    PHASE INDICATORS (FIXED)
 ===================================== */
@@ -379,8 +383,8 @@ body:not(.energy-page) .card{
 ===================================== */
 .buzzer-box{
   position:absolute;
-  right:42px;
-  top:30px;
+  right:46px;
+  top:35px;
   font-size:22px;
   cursor:pointer;
   background:#020617;
@@ -393,6 +397,8 @@ body:not(.energy-page) .card{
   box-shadow:0 0 10px red;
   opacity:0.6;
 }
+
+
 
 /* =====================================
    SETTINGS GRID
@@ -422,6 +428,10 @@ body:not(.energy-page) .card{
 }
 .setting-card{
 min-height:auto;
+}
+
+.settings-grid .setting-card input{
+  border:none !important;
 }
 
 
@@ -783,6 +793,15 @@ img{
   background:#374151;
   box-shadow:0 0 6px #000;
 }
+.blink {
+  animation: wifiBlink 0.8s infinite;
+}
+
+@keyframes wifiBlink {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.2; }
+  100% { opacity: 1; }
+}
 
 /* Signal bars container */
 .signal-bars{
@@ -803,6 +822,128 @@ img{
 .signal-bars .bar:nth-child(3){ height:12px; }
 .signal-bars .bar:nth-child(4){ height:15px; }
 
+
+
+/*******************************************************/
+/* ===== UNIFORM BUTTON STYLE (ALL BUTTONS SAME) ===== */
+/*******************************************************/
+
+/* ===== STATUS BOX LIKE SETTINGS ===== */
+
+.status-live-box{
+  width:100%;
+  max-width:240px;
+
+  height:42px;
+  display:flex;
+  align-items:center;
+
+  padding:0 12px;
+
+  border-radius:8px;
+
+  background:#1e293b;                /* 🔥 darker than input */
+  border:1px solid rgba(56,189,248,0.25);
+
+  font-size:13px;
+  font-weight:500;
+
+  box-sizing:border-box;
+}
+
+
+/* ===== BASE STATUS BOX ===== */
+.status-live-box{
+  width:100%;
+  max-width:240px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  padding:0 12px;
+  border-radius:8px;
+
+  background:#1e293b;
+  border:1px solid rgba(255,255,255,0.1);
+
+  box-sizing:border-box;
+}
+
+/* ===== BASE BOX ===== */
+.status-live-box{
+  background:#020617;
+  padding:8px 12px;
+  border-radius:8px;
+  transition:0.3s;
+}
+
+/* ===== CONNECTED (GREEN SOFT GLOW) ===== */
+.status-live-box.connected{
+  border:1px solid #22c55e;
+  box-shadow:0 0 8px rgba(34,197,94,0.5);
+}
+
+/* ===== SEARCHING (YELLOW PULSE) ===== */
+.status-live-box.searching{
+  border:1px solid #facc15;
+  animation:pulseYellow 1.2s infinite;
+}
+
+@keyframes pulseYellow{
+  0%   { box-shadow:0 0 0px rgba(250,204,21,0.2); }
+  50%  { box-shadow:0 0 12px rgba(250,204,21,0.8); }
+  100% { box-shadow:0 0 0px rgba(250,204,21,0.2); }
+}
+
+/* ===== CONNECTING (BLUE PULSE 🔵) ===== */
+.status-live-box.searching.connecting{
+  border:1px solid #38bdf8;
+  animation:pulseBlue 1s infinite;
+}
+
+@keyframes pulseBlue{
+  0%   { box-shadow:0 0 0px rgba(56,189,248,0.2); }
+  50%  { box-shadow:0 0 12px rgba(56,189,248,0.8); }
+  100% { box-shadow:0 0 0px rgba(56,189,248,0.2); }
+}
+
+/* ===== SLOW NETWORK (ORANGE WARNING) ===== */
+.status-live-box.slow{
+  border:1px solid #f97316;
+  box-shadow:0 0 10px rgba(249,115,22,0.6);
+}
+
+/* ===== ERROR / FAILED (FAST RED BLINK) ===== */
+.status-live-box.error{
+  border:1px solid #ef4444;
+  animation:blinkRedFast 0.6s infinite;
+}
+
+@keyframes blinkRedFast{
+  0%   { box-shadow:0 0 0px rgba(239,68,68,0.2); }
+  50%  { box-shadow:0 0 12px rgba(239,68,68,1); }
+  100% { box-shadow:0 0 0px rgba(239,68,68,0.2); }
+}
+
+/* ===== DISCONNECTED (SLOW RED BREATHING) ===== */
+.status-live-box.disconnected{
+  border:1px solid #ef4444;
+  animation:blinkRedSlow 1.5s infinite;
+}
+
+@keyframes blinkRedSlow{
+  0%   { box-shadow:0 0 0px rgba(239,68,68,0.2); }
+  50%  { box-shadow:0 0 8px rgba(239,68,68,0.6); }
+  100% { box-shadow:0 0 0px rgba(239,68,68,0.2); }
+}
+
+.conn-msg{
+  margin-top:8px;
+  font-size:12px;
+  opacity:0.8;
+  color:#38bdf8;
+  min-height:16px; /* 🔥 prevents jump */
+}
+
 /* ===== SETTINGS INPUT FIX ONLY ===== */
 
 .field label{
@@ -814,17 +955,7 @@ img{
 .field input,
 .field select{
   width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: #1e293b;
-  color: #fff;
-  font-size: 14px;
-}
-/* ===== CARD BORDER GLOW ===== */
-.field input,
-.field select{
-  width: 100%;
+  max-width: 100px; 
   height: 42px;
   padding: 0 12px;
   border-radius: 10px;
@@ -836,97 +967,217 @@ img{
 /* ===== SETTINGS INPUT BACKGROUND ONLY ===== */
 .setting-card input,
 .setting-card select{
-  background: #1e293b;
+  background: #1e293b !important;
   color: #fff;
   height: 42px;
   padding: 0 12px;
   border-radius: 8px;
   width: 100%;
 }
+
 .setting-card input:focus,
 .setting-card select:focus{
   outline: 1px solid #38bdf8;
 }
 
-/* hover effect */
-  .save-btn{
-  background:#22c55e !important;
-  color:#000;
-}
 
+/******* BUTTONS OF SETTINGS *******/
 
-/*******************************************************/
-/* ===== UNIFORM BUTTON STYLE (ALL BUTTONS SAME) ===== */
-/*******************************************************/
-
-
-
+/* 🔥 SAVE BUTTON (FIXED) */
 .save-btn{
   width: 260px;
   height: 44px;  
   display:block;
   border-radius:8px;
-  margin: 0 auto;   /* 🔥 center inside box */
+  margin: 0 auto;
 
   font-size: 15px;
-  background:#47dd7e !important;
+
+  background:#3b985d !important;   /* ✅ final color */
   color:#000;
+
+  border:none !important;          /* ✅ REMOVE GRAY BORDER */
+  outline:none !important;
+  box-shadow:none !important;      /* ✅ REMOVE OVERLAP */
+  cursor:pointer;
+
+  transition:0.3s;
 }
 
-.save-box{
-  background:#181e37;
-  padding:15px;
-  border-radius:16px;
+/* ✅ HOVER RESTORED */
+.save-btn:hover{
+  transform:scale(1.03);
+  filter:brightness(1.1);
+  background:#22c55e !important;
+}
 
-  box-shadow: 0 4px 15px rgba(0,0,0,0.6);  /* 🔥 fixed */
+
+/* ===== SAVE BOX BASE ===== */
+.save-box{
+  background:#141d2f !important;
+  padding:15px;
+  border-radius:16px !important;
+
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
 
   width: fit-content;
   height: 100px;
 
   margin-top: -15px;
-  margin-left: auto;   /* 👉 push right */
-  margin-right: -170px;  /* 👉 adjust */
+  margin-left: auto;
+  margin-right: -170px;
+
+  border:1px solid transparent;   /* 🔥 add border base */
+  transition: all 0.25s ease;
 }
 
+/* ===== HOVER EFFECT ===== */
+.save-box:hover{
+  border:1px solid #38bdf8;
+
+  /* optional scale (safe) */
+  transform: scale(1.01);
+
+  box-shadow:
+    0 6px 15px rgba(0,0,0,0.5),
+    0 0 6px rgba(56,189,248,0.2),
+    inset 0 0 6px rgba(255,255,255,0.02);
+}
+
+
+/* ===== SMALL BUTTONS ===== */
 .btn-test{
-  width: 44%;        /* full width Control */
-  height: 38px;       /* Small size */
-  padding: 0 12px;    /* side spacing */
+  width: 44%;
+  height: 38px;
+  padding: 0 12px;
   font-size: 13px;
 
+  border:none !important;
+  outline:none !important;
+  box-shadow:none !important;
+  cursor:pointer;
+  transition:0.3s;
 }
 
 .btn-small{
-  width: 83%;
+  width: 90% !important;
   padding: 6px 12px;
   height: 38px;
   font-size: 13px;
+
+  border:none !important;
+  outline:none !important;
+  box-shadow:none !important;
+  cursor:pointer;
+  transition:0.3s;
 }
 
-
-
-
-
-.gps-check{
-  display:flex;
-  align-items:center;              /* vertical center */
-  justify-content:space-between;   /* left text, right box */
-  width:100%;
-  font-size:14px;
+/* ✅ HOVER FIX FOR ALL SETTINGS BUTTONS */
+.btn-test:hover,
+.btn-small:hover{
+  transform:scale(1.03);
+  filter:brightness(1.1);
+  background:#1e40af !important;
 }
 
-.gps-check span{
-  flex:1;                          /* text left push karega */
-  position: relative;
-  top: -3px;   /* 🔥 yaha se up-down control */
+/* ===== ALL SETTINGS BUTTONS FIX (FINAL CLEAN) ===== */
+
+.settings-grid .setting-card button{
+  border:none !important;
+  outline:none !important;
+  box-shadow:none !important;
+
+  appearance:none;
+  -webkit-appearance:none;
 }
 
-.gps-check input{
-  width:16px;
-  height:16px;
-  margin-left:6px;                /* 🔥 gap between text & box */
+/* ===== FIX HOVER FOR ALL SETTINGS BUTTONS ===== */
+
+.settings-grid .setting-card button{
+  transition:0.3s;
   cursor:pointer;
 }
+
+/* 🔥 UNIVERSAL HOVER */
+.settings-grid .setting-card button:hover{
+  transform:scale(1.03);
+  filter:brightness(1.1);
+}
+
+
+
+/* ===== ADMIN PASSWORD INPUT HEIGHT FIX ===== */
+
+#adminPass{
+  height:50px !important;      /* 🔥 increase height */
+  padding:0 35px 0 10px !important;  /* vertical center */
+  box-sizing:border-box;
+}
+
+/******HOVER ALL SETINGS BOXES*****/
+.setting-card{
+  transition: all 0.300s ease;
+  border:1px solid transparent;
+}
+
+/* ===== HOVER EFFECT (NO LIFT + SCALE) ===== */
+.setting-card:hover{
+  transform: scale(1.01);   /* 🔥 slight zoom (safe) */
+
+  border:1px solid #38bdf8;
+
+  box-shadow:
+    0 6px 15px rgba(0,0,0,0.5),
+    0 0 5px rgba(56,189,248,0.15),
+    inset 0 0 5px rgba(255,255,255,0.02);
+}
+
+/* ===== GPS CHECKBOX FULL CONTROL ===== */
+
+.gps-check{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+
+  width:100% !important;
+  max-width:300px !important;
+
+  font-size:14px;
+
+  margin-top:8px;
+
+  position:relative;
+}
+
+/* ===== TEXT CONTROL ===== */
+.gps-check span{
+  flex:1 !important;
+
+  position:relative !important;
+
+  left:0px !important;     /* 🔥 LEFT-RIGHT control */
+  top:-2px !important;     /* 🔥 UP-DOWN control */
+
+  font-size:13px;
+  opacity:0.85;
+}
+
+/* ===== CHECKBOX CONTROL ===== */
+.gps-check input{
+  width:16px !important;    /* 🔥 SIZE control */
+  height:16px !important;
+
+  margin-left:8px !important;
+
+  position:relative !important;
+
+  right:150px !important;     /* 🔥 LEFT-RIGHT */
+  top:-2px !important;       /* 🔥 UP-DOWN */
+
+  cursor:pointer;
+}
+
+
 
 /* ===== ACCESS POPUP INPUT ===== */
 #accessPopup #accessPass{
@@ -940,29 +1191,46 @@ img{
   outline:none;
 }
 
-.qr-wrapper {
-  position: fixed;   /* screen pe lock */
-  right: 90px;
-  top: 550px;
-  z-index: 999;
+
+/******QR BLOCK*******/
+
+.qr-container {
+  display: flex;
+  align-items: center;     /* 🔥 vertical alignment */
+  gap: 20px;               /* space between button & QR */
 }
 
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  top: 0px !important;      /* ⬆️ niche + value = neeche jayega */
+  left: 0px !important;   
+}
+
+/* 🔥 QR BOX */
 #qrCode{
-  width:180px;
-  height:180px;
+  position: absolute;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  width: 180px;
+  height: 180px;
 
-  position: absolute;   /* 🔥 MAIN FIX */
-  right: 90px;          /* adjust as needed */
-  top: 650px !important;    /* adjust to same position */
-  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateZ(0);
+  will-change: transform;
 }
-.qr-card{
-  position: relative;   /* 🔥 only this card affected */
+
+/* keep buttons same size (no change) */
+button, select {
+  font-size: inherit;
+  padding: inherit;
 }
+
+
+
 #shareLink + span:hover{
   transform:translateY(-50%) scale(1.2);
 }
@@ -985,11 +1253,39 @@ img{
   font-weight:600;
 }
 
-/* Sync Status */
+/* ===== SYNC STATUS (DYNAMIC PRO) ===== */
 #syncStatus{
-  color:#22c55e;
   font-weight:600;
-  text-shadow:0 0 6px #22c55e;
+  transition: all 0.3s ease;
+}
+
+/* 🟢 ACTIVE */
+.sync-active{
+  color:#22c55e;
+  text-shadow:0 0 8px #22c55e;
+}
+
+/* 🔴 NO DATA */
+.sync-error{
+  color:#ef4444;
+  text-shadow:0 0 8px #ef4444;
+}
+
+/* ⚪ DEFAULT */
+.sync-idle{
+  color:#94a3b8;
+}
+
+
+/* 🔥 BLINK EFFECT */
+@keyframes blink {
+  0% {opacity:1;}
+  50% {opacity:0.4;}
+  100% {opacity:1;}
+}
+
+.blink {
+  animation: blink 1s infinite;
 }
 
 /* Sampling Rate */
@@ -1035,11 +1331,6 @@ img{
   font-weight:600;
 }
 
-#syncStatus{
-  color:#22c55e;
-  font-weight:600;
-  text-shadow:0 0 6px #22c55e;
-}
 
 #liveRate{
   color:#38bdf8;
@@ -1378,9 +1669,8 @@ body.app-page .card label{
 
 /* ===== ACCESS POPUP FULL CONTROL (ONLY PASSWORD POPUP) ===== */
 /************* ENERGY POPUP ACCESS PASSWORD (FINAL) *************/
-
 /* overlay */
-#accessPopup{
+#adminAccessPopup{
   display:flex;
   opacity:1 !important;
   backdrop-filter:blur(6px);
@@ -1389,42 +1679,39 @@ body.app-page .card label{
 }
 
 /* 🔥 POPUP BOX */
-/* 🔥 POPUP BOX (SIZE + GLOW IMPROVED) */
-#accessPopup > div{
-  width:360px;              /* 🔥 thoda increase */
+#adminAccessPopup > div{
+  width:360px;
   max-width:92%;
-  padding:30px;             /* 🔥 thoda spacious */
+  padding:30px;
 
   background:rgba(15,23,42,0.95) !important;
-  border-radius:16px;       /* 🔥 slightly smoother */
+  border-radius:16px;
 
   border:1px solid rgba(255,255,255,0.1);
 
-  /* 🔥 GLOW ADD */
   box-shadow:
     0 0 26px rgba(0,0,0,0.6),
-    0 0 16px rgba(56,189,248,0.25),   /* blue glow */
-    0 0 36px rgba(99,102,241,0.15);   /* soft purple glow */
+    0 0 16px rgba(56,189,248,0.25),
+    0 0 36px rgba(99,102,241,0.15);
 
   animation:popIn 0.3s ease;
 }
 
-
 /* title */
-#accessPopup h3{
+#adminAccessPopup h3{
   color:#38bdf8;
   margin-bottom:10px;
 }
 
-/* 🔥 INPUT BOX WRAPPER (IMPORTANT) */
-#accessPopup .input-wrapper{
+/* 🔥 INPUT WRAPPER */
+#adminAccessPopup .input-wrapper{
   position:relative;
   width:100%;
   margin-top:10px;
 }
 
 /* input */
-#accessPopup #accessPass{
+#adminAccessPopup #adminAccessPass{
   width:70%;
   padding:10px 40px 10px 12px;
 
@@ -1436,13 +1723,13 @@ body.app-page .card label{
 }
 
 /* focus */
-#accessPopup #accessPass:focus{
+#adminAccessPopup #adminAccessPass:focus{
   border:1px solid #38bdf8;
   box-shadow:0 0 6px #38bdf8;
 }
 
-/* 👁 eye icon PERFECT ALIGN */
-#accessPopup #eyeIcon{
+/* 👁 eye icon */
+#adminAccessPopup #adminEyeIcon{
   position:absolute;
   right:12px;
   top:50%;
@@ -1451,27 +1738,28 @@ body.app-page .card label{
   font-size:14px;
 }
 
-#accessPopup #eyeIcon i{
+#adminAccessPopup #adminEyeIcon i{
   color:#94a3b8;
   transition:0.2s;
 }
 
-#accessPopup #eyeIcon:hover i{
+#adminAccessPopup #adminEyeIcon:hover i{
   color:#38bdf8;
   transform:scale(1.2);
 }
 
 /* attempts */
-#accessPopup #attemptInfo{
+#adminAccessPopup #adminAttemptInfo{
   font-size:12px;
   color:#94a3b8;
 }
 
-#accessPopup button{
+/* button */
+#adminAccessPopup button{
   margin-top:15px;
 
-  width:200px;        /* 🔥 control length */
-  max-width:88%;      /* mobile safe */
+  width:200px;
+  max-width:88%;
 
   height:42px;
 
@@ -1480,7 +1768,6 @@ body.app-page .card label{
   margin-right:auto;
 
   border-radius:10px;
-
 
   background:linear-gradient(90deg,#22c55e,#16a34a);
   color:#000;
@@ -1492,7 +1779,8 @@ body.app-page .card label{
   transition:0.3s;
 }
 
-#accessPopup button:hover{
+/* hover */
+#adminAccessPopup button:hover{
   transform:scale(1.03);
 }
 
@@ -1737,10 +2025,11 @@ body.app-page .sidebar{
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:8px;
+  gap:1px;
   margin-top:5px;
   font-size:15px;
 }
+
 
 
 
@@ -2510,4 +2799,124 @@ body.export-page .ai-report p{
 .export-page #reportRecords{
   font-size:16px;
   letter-spacing:1px;
+}
+
+
+/* =====================================
+   🔥 FORCE GLOBAL STORAGE POPUP STYLE
+===================================== */
+
+#storagePopup{
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  width:100% !important;
+  height:100% !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:rgba(0,0,0,0.7) !important;
+  backdrop-filter: blur(6px) !important;
+
+  z-index:99999 !important;
+}
+
+/* 🔥 INNER BOX FORCE STYLE */
+#storagePopup > div{
+  width:340px !important;
+  max-width:90% !important;
+
+  background:rgba(15,23,42,0.95) !important;
+  border-radius:18px !important;
+
+  padding:28px 25px !important;
+  text-align:center !important;
+
+  border:1px solid rgba(255,255,255,0.08) !important;
+
+  box-shadow:
+    0 0 30px rgba(239,68,68,0.6),
+    0 0 60px rgba(239,68,68,0.25) !important;
+
+  animation: popIn 0.25s ease !important;
+}
+
+/* 🔴 TITLE */
+#storagePopup h2{
+  color:#ef4444 !important;
+  margin-bottom:10px !important;
+  letter-spacing:1px !important;
+}
+
+/* TEXT */
+#storagePopup p{
+  font-size:14px !important;
+  color:#cbd5e1 !important;
+  margin-bottom:20px !important;
+  line-height:1.5 !important;
+}
+
+/* BUTTON */
+#storagePopup button{
+  width:140px !important;
+  height:42px !important;
+
+  border:none !important;
+  border-radius:10px !important;
+
+  background:#22c55e !important;
+  color:#000 !important;
+
+  font-weight:600 !important;
+  cursor:pointer !important;
+
+  transition:0.3s !important;
+}
+
+/* HOVER */
+#storagePopup button:hover{
+  transform:scale(1.05) !important;
+  background:#16a34a !important;
+}
+
+/**** ANALYSIS FILE INPUT PERFECT CENTER FIX ****/
+
+#analysisFile{
+  width:100% !important;
+  height:45px !important;
+
+  padding:0 10px !important;
+
+  background:#2a2f46 !important;
+  color:#fff !important;
+
+  border:1px solid #70757c!important;
+  border-radius:7px !important;
+
+  line-height:42px !important;   /* 🔥 MAIN MAGIC */
+  box-sizing:border-box;
+}
+
+/* button inside */
+#analysisFile::file-selector-button{
+  height:30px;
+  margin-right:10px;
+  border:none;
+  border-radius:6px;
+  
+  background:#2563eb;
+  color:#fff;
+  cursor:pointer;
+}
+
+#csvPlayBtn{
+  background:#1e293b;
+  color:white;
+  border:none;
+}
+
+#csvPlayBtn:hover{
+  background:#334155;
 }
