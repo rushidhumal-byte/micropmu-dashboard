@@ -153,8 +153,8 @@ async function fetchESPData(){
     return;
   }
 
-  // 🔥 AUTO DETECT MODE (ONLY ONCE)
-  if(settings.connectionMode === "auto" && !window.espConnected && !window._autoScanTried){
+  // 🔥 AUTO DETECT MODE
+  if(settings.connectionMode === "auto" && !window.espConnected && !settings.deviceIP){
 
     window._autoScanTried = true;
 
@@ -168,7 +168,12 @@ async function fetchESPData(){
 
   try{
 
-    const ip = settings.deviceIP || "192.168.4.1";
+    if(!settings.deviceIP){
+      console.warn("No IP set");
+      return;
+    }
+
+    const ip = settings.deviceIP || "192.168.174.94";
 
     const start = Date.now();
 
@@ -231,7 +236,10 @@ async function fetchESPData(){
 
     isNoData = true;
   }
-}
+
+} // ✅ FUNCTION CLOSED PROPERLY
+
+
 
 function syncGlobalData(){
 
@@ -243,16 +251,23 @@ function syncGlobalData(){
 
 }
 
+
+
 function safeUIUpdate(){
+
   if(Date.now() - lastUIRender < 100) return;
+
   lastUIRender = Date.now();
 
   updateDashboard();
   updateSyncStatus();
+
 }
 
 
+
 // ===== ML HISTORY + DYNAMIC LIMITS =====
+
 let history = [];
 
 let dynamicLimits = {
@@ -262,7 +277,6 @@ let dynamicLimits = {
   pfMin: 0.85,
   tempMax: 60
 };
-
 /*********************************
  TOAST SYSTEM
 *********************************/
@@ -441,7 +455,7 @@ async function testESPConnection(){
     // 🔎 STEP 2: scan network
     const ip = await autoScanESP();
 
-    // ❌ NOT FOUND → DISCONNECTED
+    // ❌ NOT FOUND
     if(!ip){
       setStatus("notfound");
       return;
@@ -454,43 +468,36 @@ async function testESPConnection(){
     const input = document.getElementById("deviceIP");
     if(input) input.value = ip;
 
-    // 🔄 STEP 3: connecting delay (smooth UI)
-    setTimeout(async () => {
+    // 🔄 STEP 3: smooth delay (NO async inside setTimeout issue)
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-      setStatus("connecting");
+    setStatus("connecting");
 
-      try{
+    try{
 
-        await fetchESPData();
+      // 🔥 SAFE FETCH CALL
+      await fetchESPData();
 
-        // ✅ SUCCESS
-        if(window.espConnected){
+      // ✅ SUCCESS
+      if(window.espConnected){
 
-          // ⚡ latency check
-          if(window.espLatency && window.espLatency > 1000){
-            setStatus("slow");
-          }else{
-            setStatus("connected");
-          }
-
+        if(window.espLatency && window.espLatency > 1000){
+          setStatus("slow");
         }else{
-          // ⚠️ WAS FOUND BUT NOW LOST
-          setStatus("connection_lost");
+          setStatus("connected");
         }
 
-      }catch(e){
-        console.error("Connection Error:", e);
-
-        // ⚠️ LOST DURING CONNECT
+      }else{
         setStatus("connection_lost");
       }
 
-    }, 800);
+    }catch(e){
+      console.error("Connection Error:", e);
+      setStatus("connection_lost");
+    }
 
   }catch(e){
     console.error("Scan Error:", e);
-
-    // ❌ HARD ERROR
     setStatus("error");
   }
 }
@@ -515,14 +522,15 @@ async function autoScanESP(){
   const timeout = 8000;
 
   const baseIPs = [
-    "192.168.0.",
-    "192.168.1.",
-    "192.168.4."
-  ];
+  "192.168.174.",   // 🔥 ADD THIS (IMPORTANT)
+  "192.168.0.",
+  "192.168.1.",
+  "192.168.4."
+];
 
   for(let base of baseIPs){
 
-    for(let i = 1; i <= 20; i++){
+    for(let i = 1; i <= 254; i++){
 
       // ⏱ timeout check
       if(Date.now() - startTime > timeout){
@@ -2438,38 +2446,62 @@ function closeStorageWarning(){
 }
 
 
-  function loadSettings() {
-
-    const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
-
-    Object.entries(settings).forEach(([key, value]) => {
-
-      const el = document.getElementById(key);
-
-      if (el) {
-        if (el.type === "checkbox") {
-          el.checked = value === "on" || value === true;
-        } else {
-          el.value = value;
-          
-        }
-
-      }
-
-    });
-
-  }
-
-  function saveSettings() {
+  function loadSettings(){
 
   const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
 
-  // 🔥 ADD THIS LINE (MAIN FIX)
-  settings.systemMode = document.getElementById("systemMode").value;
+  document.querySelectorAll("input, select").forEach(el => {
 
-  settings.maxLogs = document.getElementById("maxLogs").value;
+    if(!el.id) return;
+
+    if(settings[el.id] !== undefined){
+
+      if(el.type === "checkbox"){
+        el.checked = settings[el.id] === "on";
+      } else {
+        el.value = settings[el.id];
+      }
+
+    }
+
+  });
+
+  console.log("✅ Settings Loaded:", settings);
+}
+
+  function saveSettings(){
+
+  const settings = {};
+
+  document.querySelectorAll("input, select").forEach(el => {
+
+    if(!el.id) return;
+
+    if(el.type === "checkbox"){
+      settings[el.id] = el.checked ? "on" : "off";
+    } else {
+      settings[el.id] = el.value;
+    }
+
+  });
 
   localStorage.setItem("micropmu_settings", JSON.stringify(settings));
+
+  console.log("✅ Settings Saved:", settings);
+
+  // 🔥 APPLY SETTINGS IMMEDIATELY
+  applyProtectionSettings();
+
+  // 🔥 UPDATE UI
+  updateSystemModeUI();
+
+  // 🔥 RESTART SYSTEM LOOP
+  if(window.startMasterLoop){
+    startMasterLoop();
+  }
+
+  // 🔥 FEEDBACK
+  showToast("✅ Settings Saved Successfully", 1500);
 }
 
 // ================= MASTER SYSTEM ENGINE (FINAL ULTRA CLEAN) =================
@@ -3785,7 +3817,9 @@ if(stateClass === "sync-error"){
 
 // ===== INITIAL LOAD FIX =====
 document.addEventListener("DOMContentLoaded", () => {
+
   updateSyncStatus();
+  loadSettings();  
 });
 
 /*/* ===== Test ESP Connection ====
@@ -3810,7 +3844,12 @@ function toggleModelBuzzer() {
     return;
   }
 
-  const ip = settings.deviceIP || "192.168.4.1";
+  if(!settings.deviceIP){
+  console.warn("⚠️ No IP set");
+  return;
+}
+
+const ip = settings.deviceIP || "192.168.174.94";
 
   fetch(`http://${ip}/buzzer`)
     .then(() => alert("Model buzzer toggled"))
@@ -6577,4 +6616,54 @@ function clearCSVFile(){
 
   showToast("🗑 CSV Removed");
 
+}
+
+
+
+
+function updateConnectBtn(){
+  const btn = document.querySelector(".connect-btn");
+  if(!btn) return;
+
+  btn.innerText = window.espConnected 
+    ? "✅ Connected" 
+    : "🔌 Connect ESP";
+}
+
+// 🔥 CONTINUOUS ESP FETCH LOOP
+setInterval(() => {
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+
+  if(settings.systemMode === "esp"){
+    fetchESPData();
+  }
+}, 1000); // 1 sec
+
+function saveIP(ip){
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+  settings.deviceIP = ip;
+  localStorage.setItem("micropmu_settings", JSON.stringify(settings));
+}
+
+
+// 🔥 SAFE DIRECT IP CHECK (FIXED)
+async function checkDirectIP(){
+
+  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+  const directIP = settings.deviceIP;
+
+  if(!directIP) return null;
+
+  try{
+    const res = await fetch(`http://${directIP}/data`);
+
+    if(res.ok){
+      return directIP;
+    }
+
+  }catch(e){
+    console.warn("Direct IP failed");
+  }
+
+  return null;
 }

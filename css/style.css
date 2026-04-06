@@ -987,6 +987,9 @@ img{
 .save-btn{
   width: 260px;
   height: 44px;  
+  display: flex !important;              /* 🔥 ADD */
+  align-items: center!important;      /* 🔥 CENTER VERTICAL */
+  justify-content: center!important;
   display:block;
   border-radius:8px;
   margin: 0 auto;
@@ -1079,6 +1082,8 @@ img{
   filter:brightness(1.1);
   background:#1e40af !important;
 }
+
+
 
 /* ===== ALL SETTINGS BUTTONS FIX (FINAL CLEAN) ===== */
 

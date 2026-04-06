@@ -270,6 +270,9 @@ Protection Control • System Modes • Secure Access • Device Sync
 </div>
 
 <button class="btn-test" onclick="testESPConnection()">Test Connection</button>
+<button class="connect-btn" onclick="testESPConnection()">
+  🔌 Connect ESP
+</button>
 
 <p style="font-size:12px;opacity:0.7;">
 Auto detect works if ESP is on same network.
@@ -414,7 +417,7 @@ Auto detect works if ESP is on same network.
 <button class="btn-small" onclick="testBuzzer()">Test Dashboard Buzzer</button>
 <div style="margin-top: 13%;"></div>
 <label>Alarm Sensitivity</label>
-<select id="alarmSensitivity">
+<select id="dashAlarmSensitivity">
 <option value="low">Low</option>
 <option value="medium">Medium</option>
 <option value="high">High</option>
@@ -439,7 +442,7 @@ Auto detect works if ESP is on same network.
 <button class="btn-small" onclick="toggleModelBuzzer()">Test Model Buzzer</button>
 <div style="margin-top: 13%;"></div>
 <label>Alarm Sensitivity</label>
-<select id="alarmSensitivity">
+<select id="modelAlarmSensitivity">
 <option value="low">Low</option>
 <option value="medium">Medium</option>
 <option value="high">High</option>
