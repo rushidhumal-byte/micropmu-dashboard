@@ -202,12 +202,17 @@ async function fetchESPData(){
     }
 
     // ===== CONNECTION SUCCESS =====
-    if(!window.espConnected){
-      showToast("✅ ESP Connected", 1500);
-    }
+    // ===== CONNECTION SUCCESS =====
+if(!window.espConnected){
+  showToast("✅ ESP Connected", 1500);
+}
 
-    window.espConnected = true;
-    isNoData = false;
+// 🔥 IMPORTANT
+window.espConnected = true;
+isNoData = false;
+
+// 🔥 ADD THIS (MAIN FIX)
+setStatus("connected");
 
   }catch(e){
 
@@ -219,6 +224,9 @@ async function fetchESPData(){
     }
 
     window.espConnected = false;
+
+    window.espConnected = false;
+setStatus("disconnected");
 
     // 🔥 allow auto reconnect
     window._autoScanTried = false;
