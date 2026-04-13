@@ -1,10 +1,7 @@
 /*********************************
  MICRO-PMU CORE ENGINE (STABLE)
 **********************************/
-
 /* ================= GLOBAL STATE ================= */
-
-/* ================= GETTING SYSTEM DATA ================= */
 
 function getSystemData(){
 
@@ -4754,9 +4751,6 @@ function toggleEdit(){
     btn.style.background = "#facc15";
   }
 }
-
-
-// ================= GET SLABS =================
 function getSlabs(){
 
   const slabs = [];
@@ -4768,83 +4762,120 @@ function getSlabs(){
 
     if(!unit || !rate) return;
 
-    const min = parseFloat(unit.dataset.min);
-    const max = unit.dataset.max === "Infinity"
+    let min = Number(unit.dataset.min);
+    let max = unit.dataset.max === "Infinity"
       ? Infinity
-      : parseFloat(unit.dataset.max);
+      : Number(unit.dataset.max);
 
-    const rateVal = parseFloat(rate.innerText.replace("₹",""));
+    let rateVal = parseFloat(rate.innerText.replace("₹",""));
+
+    // 🔥 SAFETY CHECK
+    if(isNaN(min)) min = 0;
+    if(isNaN(max)) max = Infinity;
+    if(isNaN(rateVal)) rateVal = 0;
 
     slabs.push({min, max, rate: rateVal});
-
   });
+
+  // 🔥 SORT (VERY IMPORTANT)
+  slabs.sort((a,b)=>a.min - b.min);
 
   return slabs;
 }
 
-
-// ================= SLAB CALCULATION =================
 function calculateSlab(units, slabs){
 
   let total = 0;
+  let breakdown = [];
+  let remaining = units;
 
-  slabs.forEach(slab => {
+  slabs.forEach((slab, index) => {
 
-    if(units > slab.min){
+    if(remaining <= 0) return;
 
-      let used = Math.min(units, slab.max) - slab.min;
+    let min = slab.min;
+    let max = slab.max;
 
-      if(used > 0){
-        total += used * slab.rate;
-      }
+    let slabUnits = 0;
+
+    // 🔥 CORE LOGIC (PERFECT)
+    if(units > min){
+
+      let upperLimit = (max === Infinity) ? units : Math.min(units, max);
+
+      slabUnits = upperLimit - min;
+    }
+
+    // 🔥 FIX NEGATIVE + LIMIT
+    slabUnits = Math.max(0, slabUnits);
+    slabUnits = Math.min(slabUnits, remaining);
+
+    let cost = slabUnits * slab.rate;
+
+    total += cost;
+    remaining -= slabUnits;
+
+    // 🔥 CLEAN BREAKDOWN
+    if(slabUnits > 0){
+      breakdown.push({
+        range: `${min}-${max === Infinity ? "∞" : max}`,
+        units: slabUnits,
+        rate: slab.rate,
+        cost: cost
+      });
     }
 
   });
 
-  return total;
+  return {
+    total: Number(total.toFixed(2)),
+    breakdown
+  };
 }
-
 
 // ================= MAIN BILL =================
 function calculateBill(){
 
   let load = parseFloat(document.getElementById("calcPower")?.value);
   let hours = parseFloat(document.getElementById("calcHours")?.value);
-  let pf = 0.95;   // 🔥 FIXED PF
+  let pf = 0.95;
 
-  const type = document.getElementById("consumerType")?.value || "dom";
+  let type = document.getElementById("consumerType")?.value || "dom";
   const supply = document.getElementById("supplyType")?.value || "LT";
   const mode = document.getElementById("billingMode")?.value || "daily";
 
   // ===== VALIDATION =====
   if(!load || load <= 0){
-    alert("⚠️Enter valid load");
+    alert("⚠️ Enter valid load");
     return;
   }
 
   if(!hours || hours <= 0){
-    alert("⚠️Enter valid hours");
+    alert("⚠️ Enter valid hours");
     return;
   }
 
-  // 🔥 REALISTIC LOAD CHECK
-if(type === "dom" && load > 20){
-  alert("⚠️Domestic load usually below 20 kW");
-  return;
-}
-
+  // ===== WARNING ONLY =====
+  if(type === "dom" && load > 20){
+    alert("⚠️ High domestic load (unusual)");
+  }
 
   let loadKW = load;
 
   // ===== UNITS =====
   let days = (mode === "daily") ? 1 : (mode === "weekly") ? 7 : 30;
-  let units = loadKW * hours * days;
-  units = Number(units.toFixed(2));
+  let units = Number((loadKW * hours * days).toFixed(2));
 
-  // 🔥 HIGH CONSUMPTION WARNING
-if(units > 1000 && type === "dom"){
-  alert("⚠️High usage detected! Consider Commercial tariff.");
-}
+  // ===== SMART SWITCH =====
+  if(units > 1000 && type === "dom"){
+    alert("⚠️ High usage → switched to commercial tariff");
+    type = "comm";
+  }
+
+  // ===== INDUSTRIAL PF =====
+  if(type === "ind"){
+    units = units / pf;
+  }
 
   // ================= ENERGY =================
   let energyCharge = 0;
@@ -4852,30 +4883,18 @@ if(units > 1000 && type === "dom"){
 
   if(type === "dom"){
 
-    const slabs = getSlabs();
-    let remaining = units;
+    const slabs = getSlabs(); // 👉 no duplicate logic
 
-    slabs.forEach(slab => {
+    const result = calculateSlab(units, slabs);
 
-      if(remaining <= 0) return;
+    energyCharge = result.total;
 
-      let slabRange = slab.max === Infinity 
-        ? remaining 
-        : Math.min(remaining, slab.max - slab.min + 1);
+    breakdown = result.breakdown.map(b =>
+      `${b.units.toFixed(0)} × ₹${b.rate} = ₹${b.cost.toFixed(2)}`
+    );
 
-      let cost = slabRange * slab.rate;
+  } else {
 
-      energyCharge += cost;
-      remaining -= slabRange;
-
-      breakdown.push(
-        `${slabRange.toFixed(0)} × ₹${slab.rate} = ₹${cost.toFixed(2)}`
-      );
-
-    });
-
-  }
-  else{
     let rate = (type === "comm") ? 9.30 : 6.90;
 
     energyCharge = units * rate;
@@ -4886,37 +4905,44 @@ if(units > 1000 && type === "dom"){
   }
 
   // ================= DUTY =================
-  let duty = (type !== "dom") ? energyCharge * 0.075 : 0;
+  let duty = energyCharge * (type === "dom" ? 0.16 : 0.075);
 
   // ================= TOS =================
-  let tos = (type !== "dom") ? units * 0.1904 : 0;
+  let tos = (type !== "dom" && mode === "monthly") ? units * 0.15 : 0;
 
   // ================= FIXED =================
   let fixed = 0;
 
   if(type === "dom"){
-    fixed = 10;
+    if(loadKW <= 1) fixed = 30;
+    else if(loadKW <= 3) fixed = 60;
+    else if(loadKW <= 5) fixed = 100;
+    else fixed = 150;
   }
   else if(type === "comm"){
     fixed = loadKW * 50;
   }
   else if(type === "ind" && supply === "HT"){
-    let kva = loadKW / pf;
-    fixed = kva * 472;
+    fixed = (loadKW / pf) * 472;
   }
 
   // ================= GST =================
-  let gst = fixed * 0.18;
+  let gst = (type !== "dom") ? (fixed + duty) * 0.18 : 0;
 
   // ================= FINAL =================
   let total = energyCharge + duty + tos + fixed + gst;
 
-  // MIN BILL FIX
-  if(type === "dom" && total < 120){
+  // SAFETY
+  energyCharge = Number(energyCharge) || 0;
+  duty = Number(duty) || 0;
+  total = Number(total) || 0;
+
+  // MIN BILL (only if real energy exists)
+  if(type === "dom" && energyCharge > 0 && total < 120){
     total = 120;
   }
 
-  // ================= UI UPDATE (🔥 IMPORTANT) =================
+  // ================= UI =================
   document.getElementById("units").innerText = units.toFixed(2);
   document.getElementById("energyCharge").innerText = "₹ " + energyCharge.toFixed(2);
   document.getElementById("duty").innerText = "₹ " + duty.toFixed(2);
@@ -4924,10 +4950,8 @@ if(units > 1000 && type === "dom"){
   document.getElementById("gst").innerText = "₹ " + gst.toFixed(2);
   document.getElementById("fixed").innerText = "₹ " + fixed.toFixed(2);
   document.getElementById("amount").innerText = "₹ " + total.toFixed(2);
- 
 
-
-  // ================= SAVE FOR PDF =================
+  // ================= SAVE =================
   window._billData = {
     tariffType: type === "dom" ? "res" : "comm",
     units,
@@ -4943,11 +4967,10 @@ if(units > 1000 && type === "dom"){
     mode,
     tariff: (type === "dom") ? "Slab Based" : (type === "comm" ? 9.30 : 6.90),
     gstPercent: 18,
-dutyPercent: (type !== "dom") ? 7.5 : 0,
+    dutyPercent: (type !== "dom") ? 7.5 : 16,
     pf
   };
 }
-
  
 // ================= SOLAR CALCULATOR (PRO VERSION) =================
 function calcSolar(){
@@ -5063,12 +5086,8 @@ function calcSolar(){
 
 }
 
-// INITIAL TYPE
 
 //*********DOWNLOAD BILL********************** */
-
-//*********DOWNLOAD BILL********************** */
-
 
 window.downloadBill = function () {
 
