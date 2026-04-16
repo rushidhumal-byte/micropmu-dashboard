@@ -4972,7 +4972,7 @@ function calculateBill(){
   };
 }
  
-// ================= SOLAR CALCULATOR (PRO VERSION) =================
+// ================= SOLAR CALCULATOR (FINAL PRO MAX) =================
 function calcSolar(){
 
   let bill = parseFloat(document.getElementById("solarBill").value) || 0;
@@ -4988,39 +4988,43 @@ function calcSolar(){
     return;
   }
 
-  // ===== AREA BASED CALCULATION (REALISTIC) =====
+  // ===== AREA =====
   let area = 0;
-
   if(rooftop.includes("Small")) area = 500;
   else if(rooftop.includes("Medium")) area = 1000;
-  else area = kw * 100; // 🔥 Large = dynamic (no limit)
+  else area = kw * 100;
 
-  let requiredArea = kw * 100; // 1kW ≈ 100 sq.ft
+  let requiredArea = kw * 100;
 
-  // ===== SUGGESTION (NO STOP) =====
+  // ===== SMART WARNINGS (NO SPAM) =====
   if(rooftop.includes("Small") && kw > 5){
-    alert("⚠️ Suggestion: Small rooftop usually supports up to ~5 kW");
+    console.warn("Small rooftop may not support >5kW");
   }
 
   if(rooftop.includes("Medium") && kw > 10){
-    alert("⚠️ Suggestion: Medium rooftop usually supports up to ~10 kW");
+    console.warn("Medium rooftop may not support >10kW");
   }
 
-  if(rooftop.includes("Large") && requiredArea > area){
-    alert("⚠️ Ensure sufficient rooftop area for large system");
-  }
-
-  // ===== FIXED REAL VALUES 🔥
+  // ===== SYSTEM PARAMETERS =====
   const efficiency = systemType.includes("On-Grid") ? 0.80 : 0.70;
-  const rate = 8;
   const costPerKW = systemType.includes("On-Grid") ? 50000 : 60000;
 
   // ===== GENERATION =====
   let monthlyUnits = kw * sun * 30 * efficiency;
   let yearlyUnits = monthlyUnits * 12;
 
+  // ===== REALISTIC BILL → UNITS ESTIMATION =====
+  let estimatedUnits = bill / 7; // avg realistic ₹/unit
+  let effectiveRate = bill / estimatedUnits;
+
+  // ===== SAFETY CLAMP =====
+  if(effectiveRate < 4) effectiveRate = 4;
+  if(effectiveRate > 12) effectiveRate = 12;
+
   // ===== SAVINGS =====
-  let monthlySavings = monthlyUnits * rate;
+  let monthlySavings = monthlyUnits * effectiveRate;
+
+  // cannot exceed bill
   monthlySavings = Math.min(monthlySavings, bill);
 
   let yearlySavings = monthlySavings * 12;
@@ -5031,56 +5035,66 @@ function calcSolar(){
   // ===== ROI =====
   let paybackYears = yearlySavings > 0 ? (totalCost / yearlySavings) : 0;
 
-  // ===== PROFIT =====
+  // ===== LIFETIME =====
   let lifetime = 25;
   let lifetimeProfit = (yearlySavings * lifetime) - totalCost;
 
   // ===== CO2 =====
   let co2 = yearlyUnits * 0.00082;
 
-  // 🔥 EXTRA SMART SUGGESTIONS
-  if(kw > 30){
-    alert("⚠️ Large system (>30kW). Suitable for commercial/industrial usage.");
-  }
-
-  if(monthlySavings < bill * 0.5){
-    alert("⚠️ Low savings. Consider increasing system size.");
-  }
+  // ===== PERFORMANCE SCORE =====
+  let performance = "Good";
+  if(paybackYears < 4) performance = "Excellent";
+  else if(paybackYears > 6) performance = "Average";
 
   // ================= UI =================
 
+  // 💰 Monthly Saving
   document.getElementById("save").innerText = "₹ " + monthlySavings.toFixed(0);
 
+  // 📅 Yearly Saving
   if(document.getElementById("yearSave")){
     document.getElementById("yearSave").innerText = "₹ " + yearlySavings.toFixed(0);
   }
 
+  // ⚡ Units Generated
   if(document.getElementById("generation")){
     document.getElementById("generation").innerText = monthlyUnits.toFixed(0) + " units";
   }
 
+  // 🔥 NEW: Units Saved
+  if(document.getElementById("unitsSaved")){
+    document.getElementById("unitsSaved").innerText = monthlyUnits.toFixed(0) + " units saved";
+  }
+
+  // ⏳ Payback
   if(document.getElementById("payback")){
     document.getElementById("payback").innerText = paybackYears.toFixed(1) + " Years";
   }
 
+  // 🌱 CO2
   if(document.getElementById("co2")){
     document.getElementById("co2").innerText = co2.toFixed(2) + " Tons/year";
   }
 
+  // 📈 Lifetime Profit
   if(document.getElementById("lifetime")){
     document.getElementById("lifetime").innerText = "₹ " + lifetimeProfit.toFixed(0);
   }
 
-  // 🔥 FALLBACK
-  if(document.getElementById("solarDetails") && !document.getElementById("generation")){
+  // 🧠 Extra Info
+  if(document.getElementById("solarDetails")){
     document.getElementById("solarDetails").innerHTML = `
       ⚡ Monthly Generation: ${monthlyUnits.toFixed(0)} kWh <br>
       📅 Yearly Generation: ${yearlyUnits.toFixed(0)} kWh <br>
-      💰 Yearly Savings: ₹${yearlySavings.toFixed(0)} <br>
+      💰 Effective Rate: ₹${effectiveRate.toFixed(2)}/unit <br>
+      💸 Monthly Savings: ₹${monthlySavings.toFixed(0)} <br>
+      💸 Yearly Savings: ₹${yearlySavings.toFixed(0)} <br>
       🏗 System Cost: ₹${totalCost.toFixed(0)} <br>
       ⏳ Payback Time: ${paybackYears.toFixed(1)} years <br>
       🌱 CO₂ Saved: ${co2.toFixed(2)} Tons/year <br>
-      📈 25 Year Profit: ₹${lifetimeProfit.toFixed(0)}
+      📈 25 Year Profit: ₹${lifetimeProfit.toFixed(0)} <br>
+      📊 Performance: ${performance}
     `;
   }
 
@@ -5316,7 +5330,7 @@ ${d.breakdown.map((b,i)=>`
 <tr>
 <td>${i+1}</td>
 <td>${b}</td>
-<td>₹${(b && b.includes("₹")) ? b.split("₹")[1] : "0"}</td>
+<td>₹${(b.match(/=\s*₹?([\d.]+)/)?.[1]) || "0.00"}</td>
 </tr>
 `).join("")}
 

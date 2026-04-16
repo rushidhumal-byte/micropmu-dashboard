@@ -2175,7 +2175,7 @@ body.energy-page .field select{
   color:#000 !important;              /* text black */
   background:#f8fafc !important;  
   width:100%;
-  max-width: 300px !important; 
+  max-width: 500px !important; 
   box-sizing:border-box;
 
   transition:0.2s;
