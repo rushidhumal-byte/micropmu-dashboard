@@ -5084,19 +5084,49 @@ function calcSolar(){
 
   // 🧠 Extra Info
   if(document.getElementById("solarDetails")){
-    document.getElementById("solarDetails").innerHTML = `
-      ⚡ Monthly Generation: ${monthlyUnits.toFixed(0)} kWh <br>
-      📅 Yearly Generation: ${yearlyUnits.toFixed(0)} kWh <br>
-      💰 Effective Rate: ₹${effectiveRate.toFixed(2)}/unit <br>
-      💸 Monthly Savings: ₹${monthlySavings.toFixed(0)} <br>
-      💸 Yearly Savings: ₹${yearlySavings.toFixed(0)} <br>
-      🏗 System Cost: ₹${totalCost.toFixed(0)} <br>
-      ⏳ Payback Time: ${paybackYears.toFixed(1)} years <br>
-      🌱 CO₂ Saved: ${co2.toFixed(2)} Tons/year <br>
-      📈 25 Year Profit: ₹${lifetimeProfit.toFixed(0)} <br>
-      📊 Performance: ${performance}
-    `;
-  }
+  document.getElementById("solarDetails").innerHTML = `
+
+  <div style="
+    background:#0f172a;
+    padding:15px;
+    border-radius:12px;
+    margin-top:10px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.4);
+    font-size:14px;
+    color:#fff;   /* 🔥 MAIN FIX */
+  ">
+
+    ${row("fas fa-bolt","Monthly Generation", monthlyUnits.toFixed(0)+" kWh")}
+    ${row("fas fa-calendar-alt","Yearly Generation", yearlyUnits.toFixed(0)+" kWh")}
+    ${row("fas fa-coins","Effective Rate","₹"+effectiveRate.toFixed(2)+"/unit")}
+    ${row("fas fa-money-bill-wave","Monthly Savings","₹"+monthlySavings.toFixed(0),"#22c55e")}
+    ${row("fas fa-wallet","Yearly Savings","₹"+yearlySavings.toFixed(0))}
+    ${row("fas fa-solar-panel","System Cost","₹"+totalCost.toFixed(0))}
+    ${row("fas fa-hourglass-half","Payback Time",paybackYears.toFixed(1)+" years")}
+    ${row("fas fa-leaf","CO₂ Saved",co2.toFixed(2)+" Tons/year")}
+    ${row("fas fa-chart-line","25 Year Profit","₹"+lifetimeProfit.toFixed(0),"#22c55e")}
+    ${row("fas fa-chart-bar","Performance",performance,"#38bdf8",false)}
+
+  </div>
+  `;
+}
+
+// 🔥 CLEAN FUNCTION (NO REPEAT)
+function row(icon,label,value,color="#fff",border=true){
+  return `
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      padding:6px 0;
+      ${border ? "border-bottom:1px solid rgba(255,255,255,0.05);" : ""}
+    ">
+      <span style="color:#94a3b8;">
+        <i class="${icon}"></i> ${label}
+      </span>
+      <b style="color:${color};">${value}</b>
+    </div>
+  `;
+}
 
 }
 

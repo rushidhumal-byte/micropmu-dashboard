@@ -2926,3 +2926,37 @@ body.export-page .ai-report p{
 #csvPlayBtn:hover{
   background:#334155;
 }
+
+
+.solar-box{
+  background:#0f172a;
+  padding:15px;
+  border-radius:12px;
+  margin-top:10px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.4);
+}
+
+.solar-row{
+  display:flex;
+  justify-content:space-between;
+  padding:6px 8px;
+  font-size:14px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+.solar-row span{
+  color:#94a3b8;
+}
+
+.solar-row b{
+  color:#fff;
+}
+
+.solar-row.highlight b{
+  color:#22c55e;
+  font-size:15px;
+}
+
+.solar-row.perf b{
+  color:#38bdf8;
+}
