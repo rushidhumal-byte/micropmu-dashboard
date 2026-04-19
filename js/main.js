@@ -170,7 +170,7 @@ async function fetchESPData(){
       return;
     }
 
-    const ip = settings.deviceIP || "192.168.174.94";
+    const ip = settings.deviceIP || "192.168.122.94";
 
     const start = Date.now();
 
@@ -204,12 +204,14 @@ if(!window.espConnected){
   showToast("✅ ESP Connected", 1500);
 }
 
-// 🔥 IMPORTANT
 window.espConnected = true;
 isNoData = false;
 
-// 🔥 ADD THIS (MAIN FIX)
 setStatus("connected");
+
+// 🔥 ADD THESE TWO LINES
+syncGlobalData();
+safeUIUpdate();
 
   }catch(e){
 
@@ -341,11 +343,15 @@ setInterval(() => {
 window.addEventListener("load", ()=>{
 
   const icon = document.getElementById("csvPlayIcon");
-if(icon){
-  icon.className = csvPlaying ? "fas fa-pause" : "fas fa-play";
-}
+  if(icon){
+    icon.className = csvPlaying ? "fas fa-pause" : "fas fa-play";
+  }
 
   setStatus("disconnected");
+
+  // 🔥 ADD THIS LINE (VERY IMPORTANT)
+  setInterval(fetchESPData, 1000);
+
 });
 
 /*********************************
@@ -527,7 +533,7 @@ async function autoScanESP(){
   const timeout = 8000;
 
   const baseIPs = [
-  "192.168.174.",   // 🔥 ADD THIS (IMPORTANT)
+  "192.168.122.",   // 🔥 ADD THIS (IMPORTANT)
   "192.168.0.",
   "192.168.1.",
   "192.168.4."
@@ -590,8 +596,16 @@ async function autoScanESP(){
 
 // ===== GLOBAL SYSTEM MODE =====
 function getSystemMode(){
-  const settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
-  return settings.systemMode || "simulation";
+
+  let settings = JSON.parse(localStorage.getItem("micropmu_settings") || "{}");
+
+  // 🔥 FORCE ESP MODE (MAIN FIX)
+  if(!settings.systemMode){
+    settings.systemMode = "esp";
+    localStorage.setItem("micropmu_settings", JSON.stringify(settings));
+  }
+
+  return settings.systemMode;
 }
 
 // ===== REAL DATA CHECK =====
@@ -3849,16 +3863,19 @@ function toggleModelBuzzer() {
     return;
   }
 
-  if(!settings.deviceIP){
-  console.warn("⚠️ No IP set");
-  return;
+  // 🔥 AUTO SET IP (FIX)
+if(!settings.deviceIP){
+  settings.deviceIP = "192.168.122.94";
+  localStorage.setItem("micropmu_settings", JSON.stringify(settings));
 }
 
-const ip = settings.deviceIP || "192.168.174.94";
+// ✅ FINAL IP
+const ip = settings.deviceIP;
 
-  fetch(`http://${ip}/buzzer`)
-    .then(() => alert("Model buzzer toggled"))
-    .catch(() => alert("ESP not reachable"));
+// 🔥 TEST FETCH
+fetch(`http://${ip}/buzzer`)
+  .then(() => alert("Model buzzer toggled"))
+  .catch(() => alert("ESP not reachable"));
 }
 
   /* ================= SIGNAL BARS ================= */
@@ -5014,7 +5031,7 @@ function calcSolar(){
   let yearlyUnits = monthlyUnits * 12;
 
   // ===== REALISTIC BILL → UNITS ESTIMATION =====
-  let estimatedUnits = bill / 7; // avg realistic ₹/unit
+  let estimatedUnits = bill / 12; // avg realistic ₹/unit
   let effectiveRate = bill / estimatedUnits;
 
   // ===== SAFETY CLAMP =====
